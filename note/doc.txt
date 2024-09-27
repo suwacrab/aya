@@ -1,0 +1,49 @@
+-----------------------------------------------------------------------------@/
+-- aya image converter
+-----------------------------------------------------------------------------@/
+
+capable of converting image formats to use on DC.
+
+-----------------------------------------------------------------------------@/
+-- Formats
+-----------------------------------------------------------------------------@/
+marisa texture format word:
+	Bits
+	--------:nnnnnnnn
+		- format ID
+			0: i4, 4bpp indexed color
+			1: i8, 8bpp indexed color
+			2: rgb565, 16-bit color
+			3: rgb5a1, 16-bit color (1-bit alpha)
+			4: argb4444 16-bit color (4-bit alpha)
+	-------t:--------
+		- nontwiddle-bit, set if texture isn't twiddled
+	------s-:--------
+		- strided bit, set if texture is strided
+
+MGI file format:
+	- Header
+		char magic[4];
+		u16 width,height;           // image dimensions 
+		u16 width_real,height_real; // ^ rounded up to powers of 2
+		u32 format_marisa;          // marisa texture format word
+		u32 palette_size;           // palette size in bytes
+		u32 palette_size_actual;    // palette size in bytes (uncompressed)
+		u32 palette_offset;         // offset in file to palette
+		u32 bmpdata_size;           // bitmap size in bytes
+		u32 bmpdata_size_actual;    // bitmap size in bytes (uncompressed)
+		u32 bmpdata_offset;         // bitmap data offset
+
+		* If a bitmap's width & height are 160x100, the real dimensions would
+		be 256x128.
+	- Palette
+		* uncompressed.
+		* images may specify to exclude the palette; if so, palette_size &
+		palette_size_actual are 0.
+		* the palette data is always ARGB8888.
+	- Bitmap
+		* zlib-compressed.
+		* pixel format depends on the format specified in the header.
+		* bitmap size in bytes can be calculated via
+		  (width_real * height_real * bpp) / 8.
+
