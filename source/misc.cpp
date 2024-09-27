@@ -41,20 +41,9 @@ auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
 		std::printf("error: deflateEnd() failed (%d)\n",succ_deflateEnd);
 		std::exit(-1);
 	}
-	
-	/*uLong ucompSize = srcblob.size();
-	uLong compsize = compressBound(ucompSize);
-
-	// dst, dstlen, src, srclen
-	int succ_compress = ::compress(comp_data.data(),&compsize,srcblob.data<Bytef>(),srcblob.size());
-	if(succ_compress != Z_OK) {
-		std::printf("compress(): zlib failed (%d)\n",succ_compress);
-		std::exit(-1);
-	}*/
 
 	Blob comp_blob;
 	comp_blob.write_raw(comp_data.data(),zlstrm.total_out);
-//	comp_blob.write_raw(comp_data.data(),compsize);
 	if(comp_blob.size() > comp_data.size()) {
 		std::puts("aya::compress(blob): error: compression was > orig size...");
 		std::exit(-1);	
