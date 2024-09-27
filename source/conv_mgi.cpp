@@ -114,6 +114,9 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		PATCHU_PGAFILE_FRAME fileframe = {};
 		fileframe.offset_tile = blob_tilesection.size();
 		fileframe.offset_bmp = blob_bmpsection.size();
+		auto duration_secs = (double)wrkframe.duration_ms;
+		auto duration_frame = (duration_secs/1000.0) * (1.0/60);
+		fileframe.duration_f = duration_frame;
 
 		// create tiled image
 		int num_tiles = (orig_width/tilesize) * (orig_height/tilesize);
