@@ -41,5 +41,5 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJS) $(OUTPUT) $(DEPS)
+	rm -rf build/*.o build/*.d $(OUTPUT)
 
