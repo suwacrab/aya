@@ -7,12 +7,11 @@
 #define MIN(a, b) ( (a)<(b)? (a):(b) )
 
 auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
-	auto comp_data_bufsize = srcblob.size();
-	auto comp_data = new Bytef[comp_data_bufsize];
+	std::vector<Bytef> comp_data(srcblob.size() + srcblob.size()/2 + 32);
 
 	// just a level below Z_BEST_COMPRESSION (9)
 	// but above Z_BEST_SPEED(1)
-	int compress_mode = Z_NO_COMPRESSION;
+	/*int compress_mode = Z_NO_COMPRESSION;
 	if(do_compress) compress_mode = Z_BEST_COMPRESSION;
 
 	z_stream zlstrm;
@@ -40,16 +39,21 @@ auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
 	if(succ_deflateEnd != Z_OK) {
 		std::printf("error: deflateEnd() failed (%d)\n",succ_deflateEnd);
 		std::exit(-1);
-	}
+	}*/
+
+	uLong ucompSize = srcblob.size();
+	uLong compsize = compressBound(ucompSize);
+
+	// dst, dstlen, src, srclen
+	::compress(comp_data.data(),&compsize,srcblob.data<Bytef>(),srcblob.size());
 
 	Blob comp_blob;
-	comp_blob.write_raw(comp_data,zlstrm.total_out);
-	if(comp_blob.size() > comp_data_bufsize) {
+	comp_blob.write_raw(comp_data.data(),compsize);
+	if(comp_blob.size() > comp_data.size()) {
 		std::puts("aya::compress(blob): error: compression was > orig size...");
 		std::exit(-1);	
 	}
 
-	delete[] comp_data;
 	return comp_blob;
 }	
 auto aya::conv_po2(int n) -> int {
