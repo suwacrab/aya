@@ -116,7 +116,9 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		fileframe.offset_bmp = blob_bmpsection.size();
 		auto duration_secs = (double)wrkframe.duration_ms;
 		auto duration_frame = (duration_secs/1000.0) * (1.0/60);
+		if(duration_frame == 0) duration_frame = 1;
 		fileframe.duration_f = duration_frame;
+		fileframe.duration_ms = wrkframe.duration_ms;
 
 		// create tiled image
 		int num_tiles = (orig_width/tilesize) * (orig_height/tilesize);
@@ -133,8 +135,6 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 			for(int ix=0; ix<orig_width; ix += tilesize) {
 				int ox = (tile_cnt%PGA_LINE_SIZE) * tilesize;
 				int oy = (tile_cnt/PGA_LINE_SIZE) * tilesize;
-	//			std::printf("src blitpos: (%d,%d)\n",ix,iy);
-	//			std::printf("out blitpos: (%d,%d)\n",ox,oy);
 				sheetframe.rect_blit(tilebmp,
 					ix,iy, // source
 					ox,oy, // dest
@@ -145,8 +145,8 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 				PATCHU_PGAFILE_TILE filetile = {};
 				filetile.pos_x = ix;
 				filetile.pos_y = iy;
-				filetile.src_x = ox;
-				filetile.src_y = oy;
+				filetile.src_x = ox; // sheet coordinate
+				filetile.src_y = oy; // sheet coordinate
 				blob_tilesection.write_raw(&filetile,sizeof(filetile));
 				tile_cnt += 1;
 			}

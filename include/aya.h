@@ -106,6 +106,7 @@ struct aya::PATCHU_PGAFILE_FRAME {
 	uint32_t offset_tile;
 	uint32_t offset_bmp;
 	uint32_t duration_f;
+	uint32_t duration_ms;
 };
 struct aya::PATCHU_PGAFILE_TILE {
 	uint16_t src_x,src_y;
