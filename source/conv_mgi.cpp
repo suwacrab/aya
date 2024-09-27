@@ -154,7 +154,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		fileframe.num_tiles = tile_cnt;
 		fileframe.size_bmp = tilebmp_blob_cmp.size();
 		fileframe.img_w = tilebmp.width();
-		fileframe.img_h = tilebmp.width();
+		fileframe.img_h = tilebmp.height();
 		blob_bmpsection.write_blob(tilebmp_blob_cmp);
 		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
