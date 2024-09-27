@@ -100,6 +100,7 @@ struct aya::PATCHU_PGAFILE_HEADER {
 	uint32_t offset_bmpsection;
 };
 struct aya::PATCHU_PGAFILE_FRAME {
+	uint16_t img_w,img_h;
 	uint32_t num_tiles;
 	uint32_t size_bmp;
 	uint32_t offset_tile;
