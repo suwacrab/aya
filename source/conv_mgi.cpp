@@ -150,7 +150,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		}
 
 		auto tilebmp_blob = tilebmp.convert_rawPGI(format);
-		auto tilebmp_blob_cmp = aya::compress(tilebmp_blob,true);
+		auto tilebmp_blob_cmp = aya::compress(tilebmp_blob,do_compress);
 		fileframe.num_tiles = tile_cnt;
 		fileframe.size_bmp = tilebmp_blob_cmp.size();
 		fileframe.img_w = tilebmp.width();
