@@ -12,8 +12,8 @@ auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
 	// just a level below Z_BEST_COMPRESSION (9)
 	// but above Z_BEST_SPEED(1)
 	int compress_mode = Z_NO_COMPRESSION;
-//	if(do_compress) compress_mode = Z_BEST_COMPRESSION;
-	if(do_compress) compress_mode = Z_BEST_SPEED;
+	if(do_compress) compress_mode = Z_BEST_COMPRESSION;
+//	if(do_compress) compress_mode = Z_BEST_SPEED;
 
 	z_stream zlstrm;
 	zlstrm.zalloc = Z_NULL;
