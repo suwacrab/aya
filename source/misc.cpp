@@ -30,8 +30,17 @@ auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
 		std::printf("aya::compress(blob): error: compression failed to init (%d)...\n",compstat);
 		std::exit(-1);
 	}
-	deflate(&zlstrm,Z_FINISH);
-	deflateEnd(&zlstrm);
+	auto succ_deflate = deflate(&zlstrm,Z_FINISH);
+	auto succ_deflateEnd = deflateEnd(&zlstrm);
+
+	if(succ_deflate != Z_OK) {
+		std::printf("error: deflate() failed (%d)\n",succ_deflate);
+		std::exit(-1);
+	}
+	if(succ_deflateEnd != Z_OK) {
+		std::printf("error: deflateEnd() failed (%d)\n",succ_deflateEnd);
+		std::exit(-1);
+	}
 
 	Blob comp_blob;
 	comp_blob.write_raw(comp_data,zlstrm.total_out);
