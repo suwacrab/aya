@@ -163,6 +163,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	header.magic[1] = 'G';
 	header.magic[2] = 'A';
 	header.format_flags = format;
+	header.num_frames = num_frames;
 	header.offset_framesection = sizeof(header);
 	header.offset_tilesection = header.offset_framesection + blob_framesection.size();
 	header.offset_bmpsection = header.offset_tilesection + blob_tilesection.size();
