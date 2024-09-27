@@ -127,9 +127,6 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
 		
 		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
-	//	std::printf("number of tiles: %d\n",num_tiles);
-	//	std::printf("orisheet size: (%d,%d)\n",sheetframe.width(),sheetframe.height());
-	//	std::printf("tilebmp size:  (%d,%d)\n",tilebmp.width(),tilebmp.height());
 		int tile_cnt = 0;
 		for(int iy=0; iy<orig_height; iy += tilesize) {
 			for(int ix=0; ix<orig_width; ix += tilesize) {
@@ -145,8 +142,8 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 				PATCHU_PGAFILE_TILE filetile = {};
 				filetile.pos_x = ix;
 				filetile.pos_y = iy;
-				filetile.src_x = ox; // sheet coordinate
-				filetile.src_y = oy; // sheet coordinate
+				filetile.sheet_x = ox; 
+				filetile.sheet_y = oy;
 				blob_tilesection.write_raw(&filetile,sizeof(filetile));
 				tile_cnt += 1;
 			}

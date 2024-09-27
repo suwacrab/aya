@@ -109,7 +109,7 @@ struct aya::PATCHU_PGAFILE_FRAME {
 	uint32_t duration_ms;
 };
 struct aya::PATCHU_PGAFILE_TILE {
-	uint16_t src_x,src_y;
+	uint16_t sheet_x,sheet_y;
 	uint16_t pos_x,pos_y;
 };
 
