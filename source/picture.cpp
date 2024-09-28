@@ -202,6 +202,12 @@ namespace aya {
 		
 		return new_pic;
 	}
+	auto CPhoto::all_equals(aya::CColor color) const -> bool {
+		for(int i=0; i<m_bmpdata.size(); i++) {
+			if(m_bmpdata[i].rawdata() != color.rawdata()) return false;
+		}
+		return true;
+	}
 
 	auto CPhoto::convert_rawPGI(int format) const -> Blob {
 		auto format_id = patchu_graphfmt::getID(format);

@@ -168,6 +168,7 @@ class aya::CPhoto {
 		auto rect_blit(CPhoto& outpic,int sx,int sy,int dx,int dy,int w=0,int h=0) const -> void;
 		auto rect_get(int x,int y,int w=0,int h=0) const -> std::shared_ptr<CPhoto>;
 		auto rect_isZero(int x, int y, int w, int h) const -> bool;
+		auto all_equals(aya::CColor color) const -> bool;
 		
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;

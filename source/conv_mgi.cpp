@@ -17,6 +17,11 @@ struct PGAWorkingFrame {
 	int width,height;
 	int src_x,src_y;
 };
+struct PGAWorkingTile {
+	std::shared_ptr<aya::CPhoto> tile_pic;
+	int sheet_x,sheet_y;
+	int pos_x,pos_y;
+};
 
 auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
 	Blob out_blob;
@@ -121,7 +126,51 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		fileframe.duration_ms = wrkframe.duration_ms;
 
 		// create tiled image
-		int num_tiles = (orig_width/tilesize) * (orig_height/tilesize);
+		std::vector<PGAWorkingTile> tile_table;
+		for(int iy=0; iy<orig_height; iy += tilesize) {
+			for(int ix=0; ix<orig_width; ix += tilesize) {
+				int idx = tile_table.size();
+				int ox = (idx%PGA_LINE_SIZE) * tilesize;
+				int oy = (idx/PGA_LINE_SIZE) * tilesize;
+
+				// create tile, only if it has pixels
+				auto tile_pic = sheetframe.rect_get(ix,iy,tilesize,tilesize);
+				if(!tile_pic->all_equals(aya::CColor())) {
+					PGAWorkingTile wrktile = {};
+					wrktile.tile_pic = tile_pic;
+					wrktile.pos_x = ix;
+					wrktile.pos_y = iy;
+					wrktile.sheet_x = ox; 
+					wrktile.sheet_y = oy;
+					tile_table.push_back(wrktile);
+				}
+			}
+		}
+
+		int num_tiles = tile_table.size();
+		int tilebmp_sizeX = tilesize*PGA_LINE_SIZE;
+		int tilebmp_sizeY = aya::conv_po2(tilesize * (num_tiles/PGA_LINE_SIZE));
+		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
+
+		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
+		for(auto& wrktile : tile_table) {
+			auto tile_pic = wrktile.tile_pic;
+			sheetframe.rect_blit(*tile_pic.get(),
+				0,0, // source
+				wrktile.sheet_x,wrktile.sheet_y, // dest
+				tilesize,tilesize // size
+			);
+
+			// create tile
+			PATCHU_PGAFILE_TILE filetile = {};
+			filetile.pos_x = wrktile.pos_x;
+			filetile.pos_y = wrktile.pos_y;
+			filetile.sheet_x = wrktile.sheet_x; 
+			filetile.sheet_y = wrktile.sheet_y;
+			blob_tilesection.write_raw(&filetile,sizeof(filetile));
+		}
+
+		/*int num_tiles = (orig_width/tilesize) * (orig_height/tilesize);
 		int tilebmp_sizeX = tilesize*PGA_LINE_SIZE;
 		int tilebmp_sizeY = aya::conv_po2(tilesize * (num_tiles/PGA_LINE_SIZE));
 		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
@@ -147,13 +196,13 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 				blob_tilesection.write_raw(&filetile,sizeof(filetile));
 				tile_cnt += 1;
 			}
-		}
+		}*/
 
 		auto tilebmp_blob = tilebmp.convert_rawPGI(format);
 		auto tilebmp_blob_cmp = aya::compress(tilebmp_blob,do_compress);
 
 		auto& bmpblob = tilebmp_blob_cmp;
-		fileframe.num_tiles = tile_cnt;
+		fileframe.num_tiles = num_tiles;
 		fileframe.size_bmp = bmpblob.size();
 		fileframe.img_w = tilebmp.width();
 		fileframe.img_h = tilebmp.height();
