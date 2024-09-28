@@ -155,10 +155,9 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
 		for(auto& wrktile : tile_table) {
 			auto tile_pic = wrktile.tile_pic;
-			sheetframe.rect_blit(*tile_pic.get(),
+			tile_pic->rect_blit(tilebmp,
 				0,0, // source
-				wrktile.sheet_x,wrktile.sheet_y, // dest
-				tilesize,tilesize // size
+				wrktile.sheet_x,wrktile.sheet_y // dest
 			);
 
 			// create tile
