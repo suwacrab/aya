@@ -43,6 +43,16 @@ void Blob::write_u32(uint32_t n) {
 	write_u16(n>>16);
 }
 
+void Blob::write_str(const std::string& str, bool no_terminator) {
+	for(int i=0; i<str.size(); i++) {
+		char chr = str.at(i);
+		write_u8(chr);
+	}
+	if(!no_terminator) {
+		write_u8(0);
+	}
+}
+
 bool Blob::send_file(std::string filename) {
 	auto file = std::fopen(filename.c_str(),"wb");
 	if(!file) {

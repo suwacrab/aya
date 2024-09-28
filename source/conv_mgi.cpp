@@ -29,22 +29,12 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	Blob blob_framesection;
 	Blob blob_tilesection;
 	Blob blob_bmpsection;
+	Blob blob_paletsection;
 	rapidjson::Document jsondoc;
 
 	std::vector<PGAWorkingFrame> frame_info_wrking;
-	std::vector<aya::PATCHU_PGAFILE_FRAME> list_file_frame;
-	std::vector<aya::PATCHU_PGAFILE_TILE> list_file_tiles;
 
 	const int tilesize = PGA_TILE_SIZE;
-	
-	/*int orig_width = (width()/PGA_TILE_SIZE)*PGA_TILE_SIZE;
-	int orig_height = (height()/PGA_TILE_SIZE)*PGA_TILE_SIZE;
-	if((orig_width%PGA_TILE_SIZE) != 0) orig_width += PGA_TILE_SIZE;
-	if((orig_height%PGA_TILE_SIZE) != 0) orig_height += PGA_TILE_SIZE;
-
-	CPhoto orig_pic(orig_width,orig_height);	// new original sheet, rounded to tiles
-	rect_blit(orig_pic,0,0,0,0);				// copy entire original sheet
-	*/
 
 	// load json from file ------------------------------@/
 	std::string json_str; {
@@ -97,12 +87,16 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		};
 		frame_info_wrking.push_back(frame);
 	}
+	// write section headers ----------------------------@/
+	blob_tilesection.write_str("TIL");
+	blob_bmpsection.write_str("BMP");
+	blob_paletsection.write_str("PAL");
 
 	// write frames -------------------------------------@/
 	for(int f=0; f<num_frames; f++) {
 		const auto& wrkframe = frame_info_wrking.at(f);
 		
-		// create picture
+		// create picture -------------------------------@/
 		int orig_width = (wrkframe.width/tilesize)*tilesize;
 		int orig_height = (wrkframe.height/tilesize)*tilesize;
 		if((wrkframe.width%tilesize) != 0) orig_width += tilesize;
@@ -115,7 +109,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 			wrkframe.width,wrkframe.height
 		);
 
-		// setup frame
+		// setup frame ----------------------------------@/
 		PATCHU_PGAFILE_FRAME fileframe = {};
 		fileframe.offset_tile = blob_tilesection.size();
 		fileframe.offset_bmp = blob_bmpsection.size();
@@ -125,7 +119,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		fileframe.duration_f = duration_frame;
 		fileframe.duration_ms = wrkframe.duration_ms;
 
-		// create tiled image
+		// create tiled image ---------------------------@/
 		std::vector<PGAWorkingTile> tile_table;
 		for(int iy=0; iy<orig_height; iy += tilesize) {
 			for(int ix=0; ix<orig_width; ix += tilesize) {
@@ -169,34 +163,6 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 			blob_tilesection.write_raw(&filetile,sizeof(filetile));
 		}
 
-		/*int num_tiles = (orig_width/tilesize) * (orig_height/tilesize);
-		int tilebmp_sizeX = tilesize*PGA_LINE_SIZE;
-		int tilebmp_sizeY = aya::conv_po2(tilesize * (num_tiles/PGA_LINE_SIZE));
-		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
-		
-		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
-		int tile_cnt = 0;
-		for(int iy=0; iy<orig_height; iy += tilesize) {
-			for(int ix=0; ix<orig_width; ix += tilesize) {
-				int ox = (tile_cnt%PGA_LINE_SIZE) * tilesize;
-				int oy = (tile_cnt/PGA_LINE_SIZE) * tilesize;
-				sheetframe.rect_blit(tilebmp,
-					ix,iy, // source
-					ox,oy, // dest
-					tilesize,tilesize // size
-				);
-
-				// create tile
-				PATCHU_PGAFILE_TILE filetile = {};
-				filetile.pos_x = ix;
-				filetile.pos_y = iy;
-				filetile.sheet_x = ox; 
-				filetile.sheet_y = oy;
-				blob_tilesection.write_raw(&filetile,sizeof(filetile));
-				tile_cnt += 1;
-			}
-		}*/
-
 		auto tilebmp_blob = tilebmp.convert_rawPGI(format);
 		auto tilebmp_blob_cmp = aya::compress(tilebmp_blob,do_compress);
 
@@ -209,6 +175,20 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
 
+	// create palette -----------------------------------@/
+	if(aya::patchu_graphfmt::getBPP(format) <= 8) {
+		Blob palet_blob;
+		for(int p=0; p<256; p++) {
+			palet_get(p).write_argb8(palet_blob);
+		}
+		auto palet_blobComp = aya::compress(palet_blob,true);
+		blob_paletsection.write_u32(true);
+		blob_paletsection.write_u32(palet_blobComp.size());
+		blob_paletsection.write_blob(palet_blobComp);
+	} else {
+		blob_paletsection.write_u32(false);
+	}
+
 	// create header ------------------------------------@/
 	aya::PATCHU_PGAFILE_HEADER header = {};
 	header.magic[0] = 'P';
@@ -219,12 +199,14 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	header.offset_framesection = sizeof(header);
 	header.offset_tilesection = header.offset_framesection + blob_framesection.size();
 	header.offset_bmpsection = header.offset_tilesection + blob_tilesection.size();
+	header.offset_paletsection = header.offset_bmpsection + blob_bmpsection.size();
 	blob_headersection.write_raw(&header,sizeof(header));
 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);
 	out_blob.write_blob(blob_tilesection);
 	out_blob.write_blob(blob_bmpsection);
+	out_blob.write_blob(blob_paletsection);
 	return out_blob;
 }
 auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> Blob {

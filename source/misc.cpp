@@ -7,7 +7,7 @@
 #define MIN(a, b) ( (a)<(b)? (a):(b) )
 
 auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
-	std::vector<Bytef> comp_data(srcblob.size() + srcblob.size()/2 + 32);
+	std::vector<Bytef> comp_data(srcblob.size()*3 + 32);
 
 	// just a level below Z_BEST_COMPRESSION (9)
 	// but above Z_BEST_SPEED(1)
