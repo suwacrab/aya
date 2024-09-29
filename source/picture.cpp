@@ -81,7 +81,9 @@ namespace aya {
 	}
 	CPhoto::CPhoto(int newwidth, int newheight) {
 		if(newwidth * newheight == 0) {
-			std::puts("aya::CPhoto::CPhoto(w,h): error: bad dimensions");
+			std::printf("aya::CPhoto::CPhoto(%4d,%4d): error: bad dimensions\n",
+				newwidth,newheight
+			);
 			std::exit(-1);
 		}
 

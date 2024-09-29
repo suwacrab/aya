@@ -95,6 +95,7 @@ struct aya::PATCHU_PGAFILE_HEADER {
 	uint32_t format_flags;
 	uint32_t palette_size;
 	uint32_t num_frames;
+	uint32_t tilesize;
 	uint32_t offset_framesection;
 	uint32_t offset_tilesection;
 	uint32_t offset_bmpsection;

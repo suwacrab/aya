@@ -9,6 +9,8 @@ PGA files contain 3 main sections:
 #include <functional>
 #include <rapidjson/document.h>
 
+#include <cmath>
+
 constexpr int PGA_TILE_SIZE = 32;
 constexpr int PGA_LINE_SIZE = 16;
 
@@ -143,10 +145,12 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		int num_tiles = tile_table.size();
 		int num_tilesReal = 0;
 		int tilebmp_sizeX = tilesize*PGA_LINE_SIZE;
-		int tilebmp_sizeY = aya::conv_po2(tilesize * (num_tiles/PGA_LINE_SIZE));
-		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
+		int tilebmp_sizeY = static_cast<int>(tilesize * std::ceil((float)(num_tiles)/PGA_LINE_SIZE));
+		if(tilebmp_sizeY == 0) tilebmp_sizeY = tilesize;
 
 		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
+	//	std::printf("f[%3d].tiles: %3d\n",f,num_tiles);
+	//	std::printf("f[%3d].tilebmp dims: (%3d,%3d)\n",f,tilebmp.width(),tilebmp.height());
 		for(int i=0; i<num_tiles;) {
 			// combine several tiles if they have the same Y
 			int line_size = 0;
@@ -162,6 +166,10 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 				line_size++;
 
 				auto tile_pic = wrktile.tile_pic;
+			//	std::printf("f[%3d].tile[%3d]: blitting to %3d,%3d\n",
+			//		f,num_tilesReal,
+			//		wrktile.sheet_x,wrktile.sheet_y
+			//	);
 				tile_pic->rect_blit(tilebmp,
 					0,0, // source
 					wrktile.sheet_x,wrktile.sheet_y // dest
@@ -220,6 +228,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	header.magic[2] = 'A';
 	header.format_flags = format;
 	header.num_frames = num_frames;
+	header.tilesize = tilesize;
 	header.offset_framesection = sizeof(header);
 	header.offset_tilesection = header.offset_framesection + blob_framesection.size();
 	header.offset_bmpsection = header.offset_tilesection + blob_tilesection.size();
