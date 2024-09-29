@@ -141,6 +141,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		}
 
 		int num_tiles = tile_table.size();
+		int num_tilesReal = 0;
 		int tilebmp_sizeX = tilesize*PGA_LINE_SIZE;
 		int tilebmp_sizeY = aya::conv_po2(tilesize * (num_tiles/PGA_LINE_SIZE));
 		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
@@ -178,13 +179,19 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 			filetile.sheet_y = wrktile.sheet_y;
 			filetile.tile_sizex = tilesize * line_size;
 			blob_tilesection.write_raw(&filetile,sizeof(filetile));
+			std::printf("line[f%3d]: sizex=%3d sheet(%4d,%4d) -> disp(%4d,%4d)\n",
+				f,filetile.tile_sizex,
+				filetile.sheet_x,filetile.sheet_y,
+				filetile.disp_x,filetile.disp_y
+			);
+			num_tilesReal++;
 		}
 
 		auto tilebmp_blob = tilebmp.convert_rawPGI(format);
 		auto tilebmp_blob_cmp = aya::compress(tilebmp_blob,do_compress);
 
 		auto& bmpblob = tilebmp_blob_cmp;
-		fileframe.num_tiles = num_tiles;
+		fileframe.num_tiles = num_tilesReal;
 		fileframe.size_bmp = bmpblob.size();
 		fileframe.img_w = tilebmp.width();
 		fileframe.img_h = tilebmp.height();
