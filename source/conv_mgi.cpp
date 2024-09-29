@@ -114,8 +114,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		fileframe.offset_tile = blob_tilesection.size();
 		fileframe.offset_bmp = blob_bmpsection.size();
 		auto duration_secs = (double)wrkframe.duration_ms;
-		auto duration_frame = (duration_secs/1000.0) * (1.0/60);
-		if(duration_frame == 0) duration_frame = 1;
+		auto duration_frame = static_cast<int>((duration_secs/1000.0) / (1.0/60));
 		fileframe.duration_f = duration_frame;
 		fileframe.duration_ms = wrkframe.duration_ms;
 
