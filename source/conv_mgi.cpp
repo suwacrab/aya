@@ -179,11 +179,11 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 			filetile.sheet_y = wrktile.sheet_y;
 			filetile.tile_sizex = tilesize * line_size;
 			blob_tilesection.write_raw(&filetile,sizeof(filetile));
-			std::printf("line[f%3d]: sizex=%3d sheet(%4d,%4d) -> disp(%4d,%4d)\n",
-				f,filetile.tile_sizex,
-				filetile.sheet_x,filetile.sheet_y,
-				filetile.disp_x,filetile.disp_y
-			);
+		//	std::printf("line[f%3d]: sizex=%3d sheet(%4d,%4d) -> disp(%4d,%4d)\n",
+		//		f,filetile.tile_sizex,
+		//		filetile.sheet_x,filetile.sheet_y,
+		//		filetile.disp_x,filetile.disp_y
+		//	);
 			num_tilesReal++;
 		}
 
