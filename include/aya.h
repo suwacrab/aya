@@ -111,7 +111,8 @@ struct aya::PATCHU_PGAFILE_FRAME {
 };
 struct aya::PATCHU_PGAFILE_TILE {
 	uint16_t sheet_x,sheet_y;
-	uint16_t pos_x,pos_y;
+	uint16_t disp_x,disp_y;
+	uint32_t tile_sizex;
 };
 
 struct aya::CColor {

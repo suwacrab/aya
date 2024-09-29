@@ -20,7 +20,7 @@ struct PGAWorkingFrame {
 struct PGAWorkingTile {
 	std::shared_ptr<aya::CPhoto> tile_pic;
 	int sheet_x,sheet_y;
-	int pos_x,pos_y;
+	int disp_x,disp_y;
 };
 
 auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
@@ -131,8 +131,8 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 				if(!tile_pic->all_equals(aya::CColor())) {
 					PGAWorkingTile wrktile = {};
 					wrktile.tile_pic = tile_pic;
-					wrktile.pos_x = ix;
-					wrktile.pos_y = iy;
+					wrktile.disp_x = ix;
+					wrktile.disp_y = iy;
 					wrktile.sheet_x = ox; 
 					wrktile.sheet_y = oy;
 					tile_table.push_back(wrktile);
@@ -146,19 +146,37 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 		if(tilebmp_sizeY == 1) tilebmp_sizeY = tilesize;
 
 		CPhoto tilebmp(tilebmp_sizeX,tilebmp_sizeY);
-		for(auto& wrktile : tile_table) {
-			auto tile_pic = wrktile.tile_pic;
-			tile_pic->rect_blit(tilebmp,
-				0,0, // source
-				wrktile.sheet_x,wrktile.sheet_y // dest
-			);
+		for(int i=0; i<num_tiles;) {
+			// combine several tiles if they have the same Y
+			int line_size = 0;
+			const auto& start_wrktile = tile_table.at(i);
+			auto start_ySheet = start_wrktile.sheet_y;
+			auto start_yDisp = start_wrktile.disp_y;
 
-			// create tile
+			int x = i;
+			while(x < num_tiles) {
+				const auto& wrktile = tile_table.at(x);
+				if(wrktile.sheet_y != start_ySheet) break;
+				if(wrktile.disp_y != start_yDisp) break;
+				line_size++;
+
+				auto tile_pic = wrktile.tile_pic;
+				tile_pic->rect_blit(tilebmp,
+					0,0, // source
+					wrktile.sheet_x,wrktile.sheet_y // dest
+				);
+				x++;
+			}
+			i = x; // set new index
+
+			// create tile (actually a combination of multiple tiles
+			const auto& wrktile = start_wrktile;
 			PATCHU_PGAFILE_TILE filetile = {};
-			filetile.pos_x = wrktile.pos_x;
-			filetile.pos_y = wrktile.pos_y;
+			filetile.disp_x = wrktile.disp_x;
+			filetile.disp_y = wrktile.disp_y;
 			filetile.sheet_x = wrktile.sheet_x; 
 			filetile.sheet_y = wrktile.sheet_y;
+			filetile.tile_sizex = tilesize * line_size;
 			blob_tilesection.write_raw(&filetile,sizeof(filetile));
 		}
 
