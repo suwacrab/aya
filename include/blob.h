@@ -19,6 +19,7 @@ class Blob {
 
 		void reset();
 		bool send_file(std::string filename);
+		bool compress(bool do_compress=true);
 
 		template<typename T=void> auto data() -> T* {
 			return reinterpret_cast<T*>(m_data.data());

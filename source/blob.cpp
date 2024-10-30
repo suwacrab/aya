@@ -1,5 +1,6 @@
 #include <blob.h>
 #include <cstdio>
+#include <zlib.h>
 
 Blob::Blob() {
 	reset();
@@ -65,5 +66,50 @@ bool Blob::send_file(std::string filename) {
 	std::fwrite(data(),sizeof(char),size(),file);
 	std::fclose(file);
 	return true;
+}
+Blob Blob::compress(bool do_compress) {
+	std::vector<Bytef> comp_data(size()*3 + 32);
+
+	// just a level below Z_BEST_COMPRESSION (9)
+	// but above Z_BEST_SPEED(1)
+	int compress_mode = Z_NO_COMPRESSION;
+	if(do_compress) compress_mode = Z_BEST_COMPRESSION;
+//	if(do_compress) compress_mode = Z_BEST_SPEED;
+
+	z_stream zlstrm;
+	zlstrm.zalloc = Z_NULL;
+	zlstrm.zfree = Z_NULL;
+	zlstrm.opaque = Z_NULL;
+
+	zlstrm.avail_in = size();
+	zlstrm.next_in = data<Bytef>();
+	zlstrm.avail_out = comp_data.size();
+	zlstrm.next_out = comp_data.data();
+
+	auto compstat = deflateInit(&zlstrm,compress_mode);
+	if(compstat != Z_OK) {
+		std::printf("Blob::compress(): error: compression failed to init (%d)...\n",compstat);
+		std::exit(-1);
+	}
+	auto succ_deflate = deflate(&zlstrm,Z_FINISH);
+	if(succ_deflate == Z_STREAM_ERROR) {
+		std::printf("Blob::compress(): error: deflate() failed (%d)\n",succ_deflate);
+		std::exit(-1);
+	}
+	auto succ_deflateEnd = deflateEnd(&zlstrm);
+
+	if(succ_deflateEnd != Z_OK) {
+		std::printf("Blob::compress(): error: deflateEnd() failed (%d)\n",succ_deflateEnd);
+		std::exit(-1);
+	}
+
+	Blob comp_blob;
+	comp_blob.write_raw(comp_data.data(),zlstrm.total_out);
+	if(comp_blob.size() > comp_data.size()) {
+		std::puts("Blob::compress(): error: compression was > orig size...");
+		std::exit(-1);	
+	}
+
+	return comp_blob;
 }
 
