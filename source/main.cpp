@@ -184,6 +184,7 @@ static void disp_usage() {
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4444\n"
 		"\t.PGI specifics:\n"
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4,argb8\n"
+		"\t.PGA specifics:\n"
 		"\t\t-pga_json <json>  specifies aseprite spritesheet .json to use\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
