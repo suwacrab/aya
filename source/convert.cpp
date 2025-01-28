@@ -30,9 +30,10 @@ NGA files contain 4 main sections:
 		-	word[2]:	dimensions (width & height)
 		-	word[2]:	X/Y offset
 	*	palette section
-		*	header. (4 bytes)
-		*	size (0, if no palette)
-		*	palette data (zlib-compressed)
+		*	original size (0, if no palette)
+		*	then, only if the palette exists, the following:
+			-	compressed size
+			-	palette data (zlib-compressed)
 	*	bitmap section
 */
 #include <aya.h>
@@ -600,6 +601,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 			palet_get(p).write_rgb5a1_sat(palet_blob,true);
 		}
 		auto palet_blobComp = aya::compress(palet_blob,false);
+		blob_paletsection.write_be_u32(palet_blob.size());
 		blob_paletsection.write_be_u32(palet_blobComp.size());
 		blob_paletsection.write_blob(palet_blobComp);
 	} else {
