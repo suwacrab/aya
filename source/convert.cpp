@@ -637,8 +637,8 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);
 	out_blob.write_blob(blob_subframesection);
-	out_blob.write_blob(blob_bmpsection_real);
 	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_bmpsection_real);
 	return out_blob;
 }
 
