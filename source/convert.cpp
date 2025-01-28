@@ -163,7 +163,6 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 		frame.m_durationFrame = duration_frame;
 		frame.m_subframes.push_back(aya::CWorkingSubframe(sheetframe,0,0));
 		m_frames.push_back(frame);
-		printf("loaded frame %d\n",i);
 	}
 }
 
@@ -587,9 +586,9 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 			blob_subframesection.write_be_u16(subframe.m_posY);
 
 			subframe_index++;
-			printf("subframe[%2d][%d]: bmpsize=%zu\n",
+			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",
 				f,sf,bmpblob.size()
-			);
+			);*/
 		}
 	}
 
