@@ -609,6 +609,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	}
 
 	// fix up bmp section -------------------------------@/
+	blob_bmpsection_real.write_str("BMP");
 	blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 	blob_bmpsection_real.write_blob(blob_bmpsection);
 
