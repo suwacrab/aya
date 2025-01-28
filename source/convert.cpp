@@ -609,9 +609,12 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	}
 
 	// fix up bmp section -------------------------------@/
-	blob_bmpsection_real.write_str("CEL");
-	blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
-	blob_bmpsection_real.write_blob(blob_bmpsection);
+	blob_bmpsection_real.write_str("CEL"); {
+		Blob bmpblobComp = aya::compress(blob_bmpsection,true);
+		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
+		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
+		blob_bmpsection_real.write_blob(bmpblobComp);
+	}
 
 	// create header ------------------------------------@/
 	blob_framesection.pad(pad_size);
