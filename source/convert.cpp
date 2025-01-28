@@ -542,10 +542,10 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 
 	// write section headers ----------------------------@/
 	blob_headersection.write_str("NGA");
-//	blob_framesection.write_str("FRM");
-//	blob_subframesection.write_str("SUB");
+	blob_framesection.write_str("FRM");
+	blob_subframesection.write_str("SUB");
 //	blob_bmpsection.write_str("CEL");
-//	blob_paletsection.write_str("PAL");
+	blob_paletsection.write_str("PAL");
 
 	size_t subframe_index = 0;
 
@@ -609,7 +609,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	}
 
 	// fix up bmp section -------------------------------@/
-	blob_bmpsection_real.write_str("BMP");
+	blob_bmpsection_real.write_str("CEL");
 	blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 	blob_bmpsection_real.write_blob(blob_bmpsection);
 
