@@ -23,8 +23,8 @@ NGA files contain 4 main sections:
 		-	long:	index of subframe, in subframe section
 	*	subframe section
 		*	for each subframe, it's the following:
-		-	word:		bmp offset (/ 8)
-		-	word:		bmp size (/ 8)
+		-	long:		bmp offset (/ 8)
+		-	long:		bmp size (/ 8)
 		-	word:		palette number
 		-	word:		ceil'd width ()
 		-	word[2]:	dimensions (width & height)
