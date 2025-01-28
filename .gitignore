@@ -6,3 +6,4 @@ workdata/*.pga
 workdata/*.nga
 workdata/*.png
 workdata/*.bmp
+workdata/*.json
