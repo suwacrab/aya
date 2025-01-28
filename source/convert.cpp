@@ -600,7 +600,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_sat(palet_blob,true);
 		}
-		auto palet_blobComp = aya::compress(palet_blob,false);
+		auto palet_blobComp = aya::compress(palet_blob,do_compress);
 		blob_paletsection.write_be_u32(palet_blob.size());
 		blob_paletsection.write_be_u32(palet_blobComp.size());
 		blob_paletsection.write_blob(palet_blobComp);
@@ -610,7 +610,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 
 	// fix up bmp section -------------------------------@/
 	blob_bmpsection_real.write_str("CEL"); {
-		Blob bmpblobComp = aya::compress(blob_bmpsection,true);
+		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
 		blob_bmpsection_real.write_blob(bmpblobComp);
