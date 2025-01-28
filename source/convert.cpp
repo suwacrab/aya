@@ -6,7 +6,14 @@ PGA files contain 4 main sections:
 	*	frame bitmap section
 
 NGA files contain 4 main sections:
+	*	each section has a 4-byte header (except for the bitmap section!)
 	*	header section
+		-	word: format
+		-	word: framecount
+		-	long: frame section offset
+		-	long: subframe section offset
+		-	long: palette section offset
+		-	long: bitmap section offset
 	*	frame section
 		*	for each frame, it's the following:
 		-	word:	number of subframes of the frame
@@ -14,8 +21,8 @@ NGA files contain 4 main sections:
 		-	long:	index of subframe, in subframe section
 	*	subframe section
 		*	for each subframe, it's the following:
-		-	long:		bmp offset
-		-	long:		bmp size
+		-	word:		bmp offset (/ 8)
+		-	word:		bmp size (/ 8)
 		-	word:		palette number
 		-	word:		ceil'd width ()
 		-	word[2]:	dimensions (width & height)
@@ -24,7 +31,7 @@ NGA files contain 4 main sections:
 		*	header. (4 bytes)
 		*	size (0, if no palette)
 		*	palette data (zlib-compressed)
-	*	frame bitmap section
+	*	bitmap section
 */
 #include <aya.h>
 #include <functional>
@@ -532,10 +539,10 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 
 	// write section headers ----------------------------@/
 	blob_headersection.write_str("NGA");
-	blob_framesection.write_str("FRM");
-	blob_subframesection.write_str("SUB");
-	blob_bmpsection.write_str("CEL");
-	blob_paletsection.write_str("PAL");
+//	blob_framesection.write_str("FRM");
+//	blob_subframesection.write_str("SUB");
+//	blob_bmpsection.write_str("CEL");
+//	blob_paletsection.write_str("PAL");
 
 	size_t subframe_index = 0;
 
@@ -563,12 +570,12 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 
 			// write subframe data ----------------------@/
 			const int palette_num = 0; // only 1 palette, for now...
-			blob_subframesection.write_be_u32(blob_bmpsection.size());
+			blob_subframesection.write_be_u32(blob_bmpsection.size()/8);
 			
 			auto bmpblob = subframe_photo.convert_rawNGI(format);
 			blob_bmpsection.write_blob(bmpblob);
 			
-			blob_subframesection.write_be_u32(bmpblob.size());
+			blob_subframesection.write_be_u32(bmpblob.size()/8);
 			blob_subframesection.write_be_u16(palette_num);
 			blob_subframesection.write_be_u16(rounded_width);
 			blob_subframesection.write_be_u16(subframe_photoOrig.width());
