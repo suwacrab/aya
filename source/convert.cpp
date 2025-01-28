@@ -532,6 +532,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	Blob blob_subframesection;
 	Blob blob_paletsection;
 	Blob blob_bmpsection;
+	Blob blob_bmpsection_real;
 
 	aya::CWorkingFrameList framelist;
 	framelist.create_fromAseJSON(*this,json_filename);
@@ -607,10 +608,14 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 		blob_paletsection.write_u32(0);
 	}
 
+	// fix up bmp section -------------------------------@/
+	blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
+	blob_bmpsection_real.write_blob(blob_bmpsection);
+
 	// create header ------------------------------------@/
 	blob_framesection.pad(pad_size);
 	blob_subframesection.pad(pad_size);
-	blob_bmpsection.pad(pad_size);
+	blob_bmpsection_real.pad(pad_size);
 	blob_paletsection.pad(pad_size);
 	
 	size_t offset_framesection = 0x20;
@@ -631,7 +636,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);
 	out_blob.write_blob(blob_subframesection);
-	out_blob.write_blob(blob_bmpsection);
+	out_blob.write_blob(blob_bmpsection_real);
 	out_blob.write_blob(blob_paletsection);
 	return out_blob;
 }
