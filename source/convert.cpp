@@ -7,6 +7,7 @@ PGA files contain 4 main sections:
 
 NGA files contain 4 main sections:
 	*	each section has a 4-byte header (except for the bitmap section!)
+	*	NOTE: not true ^
 	*	header section
 		-	word: format
 		-	word: framecount
