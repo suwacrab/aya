@@ -43,6 +43,16 @@ void Blob::write_u32(uint32_t n) {
 	write_u16(n);
 	write_u16(n>>16);
 }
+void Blob::write_be_u16(uint32_t n) {
+	write_u8(n>>8);
+	write_u8(n);
+}
+void Blob::write_be_u32(uint32_t n) {
+	write_u8(n>>24);
+	write_u8(n>>16);
+	write_u8(n>>8);
+	write_u8(n);
+}
 
 void Blob::write_str(const std::string& str, bool no_terminator) {
 	for(int i=0; i<str.size(); i++) {
@@ -51,6 +61,11 @@ void Blob::write_str(const std::string& str, bool no_terminator) {
 	}
 	if(!no_terminator) {
 		write_u8(0);
+	}
+}
+void Blob::pad(int divisor) {
+	while((size()%divisor) != 0) {
+		write_u8(0xAB);
 	}
 }
 
@@ -112,4 +127,5 @@ Blob Blob::compress(bool do_compress) {
 
 	return comp_blob;
 }
+
 

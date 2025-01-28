@@ -14,8 +14,11 @@ class Blob {
 		void write_u8(uint32_t n);
 		void write_u16(uint32_t n);
 		void write_u32(uint32_t n);
+		void write_be_u16(uint32_t n);
+		void write_be_u32(uint32_t n);
 
 		void write_str(const std::string& str, bool no_terminator=false);
+		void pad(int divisor);
 
 		void reset();
 		bool send_file(std::string filename);

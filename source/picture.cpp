@@ -2,6 +2,11 @@
 #include <freeimage.h>
 
 namespace aya {
+	CPhoto::CPhoto() {
+		m_width = 0;
+		m_height = 0;
+		m_bmpdata.clear();
+	}
 	CPhoto::CPhoto(std::string filename,bool paletted, bool opaque_pal) {
 		// load image -----------------------------------@/
 		auto filetype = FreeImage_GetFileType(filename.c_str(),0);
@@ -298,6 +303,47 @@ namespace aya {
 				for(int iy=0; iy<height(); iy++) {
 					for(int ix=0; ix<width(); ix++) {
 						dot_getRawC(ix,iy).write_argb4(blob_bmp);
+					}
+				}
+				break;
+			}
+			default: {
+				puts("aya::CPhoto::convert_raw(fmt): error: format not supported ^^;");
+				std::exit(-1);
+				break;
+			}
+		}
+
+		return blob_bmp;
+	}
+	auto CPhoto::convert_rawNGI(int format) const -> Blob {
+		auto format_id = narumi_graphfmt::getID(format);
+		Blob blob_bmp;
+
+		switch(format_id) {
+			case narumi_graphfmt::i4: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix += 2) {
+						auto dotA = dot_getRawC(ix,iy).a & 0xF;
+						auto dotB = dot_getRawC(ix+1,iy).a & 0xF;
+						
+						blob_bmp.write_u8(dotB | (dotA<<4));
+					}
+				}		
+				break;
+			}
+			case narumi_graphfmt::i8: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix++) {
+						dot_getRawC(ix,iy).write_alpha(blob_bmp);
+					}
+				}		
+				break;
+			}
+			case narumi_graphfmt::rgb: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix++) {
+						dot_getRawC(ix,iy).write_rgb5a1_sat(blob_bmp,true);
 					}
 				}
 				break;

@@ -10,6 +10,9 @@ namespace aya {
 	class CPhoto;
 	struct CColor;
 	struct CAyaVersion;
+	class CWorkingFrame;
+	class CWorkingSubframe;
+	class CWorkingFrameList;
 
 	struct MARISA_MGIFILE_HEADER;
 	struct PATCHU_PGIFILE_HEADER;
@@ -52,6 +55,15 @@ namespace aya {
 		auto getBPP(int format) -> int;
 		constexpr auto getID(int format) -> int { return format & 0xFF; }
 		constexpr auto isTwiddled(int format) -> bool { return (format & nontwiddled) == 0; }
+		constexpr auto isValid(int format) -> bool {
+			auto id = getID(format);
+			return (id >= 0) && (id < len);
+		}
+	};
+	namespace narumi_graphfmt {
+		enum { i4,i8,rgb,len };
+		auto getBPP(int format) -> int;
+		constexpr auto getID(int format) -> int { return format & 0xFF; }
 		constexpr auto isValid(int format) -> bool {
 			auto id = getID(format);
 			return (id >= 0) && (id < len);
@@ -122,6 +134,7 @@ struct aya::CColor {
 	void write_argb8(Blob& out_blob) const;
 	void write_rgb565(Blob& out_blob) const;
 	void write_rgb5a1(Blob& out_blob,int test = 254) const;
+	void write_rgb5a1_sat(Blob& out_blob,bool msb) const;
 	void write_argb4(Blob& out_blob) const;
 
 	constexpr auto rawdata() const -> uint32_t {
@@ -176,13 +189,53 @@ class aya::CPhoto {
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
+		auto convert_fileNGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
 		auto convert_raw(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
+		auto convert_rawNGI(int format) const -> Blob;
 		auto convert_twiddled(int format) const -> Blob;
 
+		CPhoto();
 		CPhoto(std::string filename,bool paletted = false, bool opaque_pal=false);
 		CPhoto(int newwidth, int newheight);
 		~CPhoto();
+};
+
+class aya::CWorkingSubframe {
+	private:
+		aya::CPhoto m_photo;
+	public:
+		int m_posX,m_posY;
+		auto photo() -> aya::CPhoto& { return m_photo; }
+
+		CWorkingSubframe();
+		CWorkingSubframe(aya::CPhoto& photo, int pos_x, int pos_y);
+		~CWorkingSubframe() {}
+};
+class aya::CWorkingFrame {
+	private:
+	public:
+		int m_durationMS;
+		int m_durationFrame;
+
+		std::vector<aya::CWorkingSubframe> m_subframes;
+		auto subframe_get(size_t index) -> aya::CWorkingSubframe&;
+		auto subframe_count() const -> size_t { return m_subframes.size(); }
+
+		CWorkingFrame();
+		~CWorkingFrame() {}
+};
+class aya::CWorkingFrameList {
+	private:
+		std::vector<aya::CWorkingFrame> m_frames;
+	public:
+		auto create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename) -> void;
+		
+		auto frame_get(size_t index) -> aya::CWorkingFrame&;
+		auto frame_count() const -> size_t { return m_frames.size(); }
+
+		CWorkingFrameList();
+		~CWorkingFrameList() {}
 };
 
 #endif

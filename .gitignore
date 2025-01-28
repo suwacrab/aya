@@ -2,3 +2,7 @@ build/*.o
 build/*.d
 bin/*.exe
 
+workdata/*.pga
+workdata/*.nga
+workdata/*.png
+workdata/*.bmp

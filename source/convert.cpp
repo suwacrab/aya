@@ -1,8 +1,29 @@
 /*
-PGA files contain 3 main sections:
+PGA files contain 4 main sections:
 	*	header section
 	*	frame section
 	*	frame tile positioning section
+	*	frame bitmap section
+
+NGA files contain 4 main sections:
+	*	header section
+	*	frame section
+		*	for each frame, it's the following:
+		-	word:	number of subframes of the frame
+		-	word:   duration in frames
+		-	long:	index of subframe, in subframe section
+	*	subframe section
+		*	for each subframe, it's the following:
+		-	long:		bmp offset
+		-	long:		bmp size
+		-	word:		palette number
+		-	word:		ceil'd width ()
+		-	word[2]:	dimensions (width & height)
+		-	word[2]:	X/Y offset
+	*	palette section
+		*	header. (4 bytes)
+		*	size (0, if no palette)
+		*	palette data (zlib-compressed)
 	*	frame bitmap section
 */
 #include <aya.h>
@@ -25,6 +46,118 @@ struct PGAWorkingTile {
 	int disp_x,disp_y;
 };
 
+// working frames -----------------------------------------------------------@/
+auto aya::CWorkingFrame::subframe_get(size_t index) -> aya::CWorkingSubframe& {
+	if(index >= subframe_count()) {
+		std::printf("aya::CWorkingFrame::subframe_get(): error: index %zu out of range\n",
+			index
+		);
+		std::exit(-1);
+	}
+	return m_subframes.at(index);
+}
+aya::CWorkingFrame::CWorkingFrame() {
+	m_subframes.clear();
+	m_durationMS = 0;
+	m_durationFrame = 0;
+}
+
+aya::CWorkingSubframe::CWorkingSubframe() {
+	m_posX = 0;
+	m_posY = 0;
+}
+aya::CWorkingSubframe::CWorkingSubframe(aya::CPhoto& photo, int pos_x, int pos_y) {
+	m_photo = photo;
+	m_posX = pos_x;
+	m_posY = pos_y;
+}
+
+aya::CWorkingFrameList::CWorkingFrameList() {
+	m_frames.clear();
+}
+auto aya::CWorkingFrameList::frame_get(size_t index) -> aya::CWorkingFrame& {
+	if(index >= frame_count()) {
+		std::printf("aya::CWorkingFrameList::frame_get(): error: index %zu out of range\n",
+			index
+		);
+		std::exit(-1);
+	}
+	return m_frames.at(index);
+}
+auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename) -> void {
+	m_frames.clear();
+	rapidjson::Document jsondoc;
+
+	// load json from file ------------------------------@/
+	std::string json_str; {
+		std::vector<char> filedata;
+
+		// set file buffer's size
+		auto file = std::fopen(json_filename.c_str(),"rb");
+		if(!file) {
+			std::printf("aya::CWorkingFrameList::create_fromAseJSON(): error: unable to open file %s for reading\n",
+				json_filename.c_str()
+			);
+			std::exit(-1);
+		}
+		std::fseek(file,0,SEEK_END);
+		filedata.resize(std::ftell(file));
+
+		// read file to string
+		std::fseek(file,0,SEEK_SET);
+		std::fread(filedata.data(),filedata.size(),1,file);
+		std::fclose(file);
+
+		filedata.push_back(0); // null terminator
+		json_str = std::string(filedata.data());
+	}
+	jsondoc.Parse(json_str.c_str());
+	
+	auto json_validate = [&](const std::string& keyname) {
+		if(!jsondoc.HasMember(keyname.c_str())) {
+			std::printf("aya: validation error: json file missing key %s\n",
+				keyname.c_str()
+			);
+			std::exit(-1);
+		}
+	};
+	
+	// create working frame table -----------------------@/
+	json_validate("frames");
+	json_validate("meta");
+
+	const int num_frames = jsondoc["frames"].Size();
+
+	for(int i=0; i<num_frames; i++) {
+		auto& src_frame = jsondoc["frames"][i];
+		int duration_ms = src_frame["duration"].GetInt();
+		int width = src_frame["frame"]["w"].GetInt();
+		int height = src_frame["frame"]["h"].GetInt();
+		int src_x = src_frame["frame"]["x"].GetInt();
+		int src_y = src_frame["frame"]["y"].GetInt();
+
+		// get duration ---------------------------------@/
+		auto duration_secs = (double)duration_ms;
+		auto duration_frame = static_cast<int>((duration_secs/1000.0) / (1.0/60));
+
+		// get subframe (only one, since aseprite) ------@/
+		CPhoto sheetframe(width,height);
+		baseimage.rect_blit(sheetframe,
+			src_x,src_y,
+			0,0,	// destination (0,0)
+			width,height
+		);
+
+		CWorkingFrame frame;
+		frame.m_durationMS = duration_ms;
+		frame.m_durationFrame = duration_frame;
+		frame.m_subframes.push_back(aya::CWorkingSubframe(sheetframe,0,0));
+		m_frames.push_back(frame);
+		printf("loaded frame %d\n",i);
+	}
+}
+
+// conversion ---------------------------------------------------------------@/
 auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
 	Blob out_blob;
 	Blob blob_headersection;
@@ -381,6 +514,114 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
 	out_blob.write_raw(&header,sizeof(header));
 	out_blob.write_blob(blob_palette);
 	out_blob.write_blob(blob_bmp);
+	return out_blob;
+}
+auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
+	Blob out_blob;
+	Blob blob_headersection;
+	Blob blob_framesection;
+	Blob blob_subframesection;
+	Blob blob_paletsection;
+	Blob blob_bmpsection;
+
+	aya::CWorkingFrameList framelist;
+	framelist.create_fromAseJSON(*this,json_filename);
+
+	const int num_frames = framelist.frame_count();
+	const int pad_size = 0x20;
+
+	// write section headers ----------------------------@/
+	blob_headersection.write_str("NGA");
+	blob_framesection.write_str("FRM");
+	blob_subframesection.write_str("SUB");
+	blob_bmpsection.write_str("CEL");
+	blob_paletsection.write_str("PAL");
+
+	size_t subframe_index = 0;
+
+	// write frames -------------------------------------@/
+	for(int f=0; f<num_frames; f++) {
+		auto& wrkframe = framelist.frame_get(f);
+		// write regular frame --------------------------@/
+		blob_framesection.write_be_u16(wrkframe.subframe_count());
+		blob_framesection.write_be_u16(wrkframe.m_durationFrame);
+		blob_framesection.write_be_u32(subframe_index);
+		
+		// write each subframe --------------------------@/
+		for(int sf=0; sf<wrkframe.subframe_count(); sf++) {
+			auto subframe = wrkframe.subframe_get(sf);
+			auto& subframe_photoOrig = subframe.photo();
+			int rounded_width = std::ceil((float)(subframe_photoOrig.width())/8.0)*8;
+
+			// get bitmap data --------------------------@/
+			CPhoto subframe_photo(
+				rounded_width,
+				subframe_photoOrig.height()
+			);
+			// copy to slightly-bigger photo
+			subframe_photoOrig.rect_blit(subframe_photo,0,0,0,0); 
+
+			// write subframe data ----------------------@/
+			const int palette_num = 0; // only 1 palette, for now...
+			blob_subframesection.write_be_u32(blob_bmpsection.size());
+			
+			auto bmpblob = subframe_photo.convert_rawNGI(format);
+			blob_bmpsection.write_blob(bmpblob);
+			
+			blob_subframesection.write_be_u32(bmpblob.size());
+			blob_subframesection.write_be_u16(palette_num);
+			blob_subframesection.write_be_u16(rounded_width);
+			blob_subframesection.write_be_u16(subframe_photoOrig.width());
+			blob_subframesection.write_be_u16(subframe_photo.height());
+			blob_subframesection.write_be_u16(subframe.m_posX);
+			blob_subframesection.write_be_u16(subframe.m_posY);
+
+			subframe_index++;
+			printf("subframe[%2d][%d]: bmpsize=%zu\n",
+				f,sf,bmpblob.size()
+			);
+		}
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::narumi_graphfmt::getBPP(format) <= 8) {
+		Blob palet_blob;
+		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
+		for(int p=0; p<color_count; p++) {
+			palet_get(p).write_rgb5a1_sat(palet_blob,true);
+		}
+		auto palet_blobComp = aya::compress(palet_blob,false);
+		blob_paletsection.write_be_u32(palet_blobComp.size());
+		blob_paletsection.write_blob(palet_blobComp);
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// create header ------------------------------------@/
+	blob_framesection.pad(pad_size);
+	blob_subframesection.pad(pad_size);
+	blob_bmpsection.pad(pad_size);
+	blob_paletsection.pad(pad_size);
+	
+	size_t offset_framesection = 0x20;
+	size_t offset_subframesection = offset_framesection + blob_framesection.size();
+	size_t offset_paletsection = offset_subframesection + blob_subframesection.size();
+	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
+
+	blob_headersection.write_be_u16(format);
+	blob_headersection.write_be_u16(num_frames);
+
+	blob_headersection.write_be_u32(offset_framesection);
+	blob_headersection.write_be_u32(offset_subframesection);
+	blob_headersection.write_be_u32(offset_paletsection);
+	blob_headersection.write_be_u32(offset_bmpsection);
+	blob_headersection.pad(pad_size);
+
+	out_blob.write_blob(blob_headersection);
+	out_blob.write_blob(blob_framesection);
+	out_blob.write_blob(blob_subframesection);
+	out_blob.write_blob(blob_bmpsection);
+	out_blob.write_blob(blob_paletsection);
 	return out_blob;
 }
 

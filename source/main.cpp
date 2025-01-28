@@ -31,6 +31,7 @@ int main(int argc,const char* argv[]) {
 	std::string param_filetype;
 
 	std::string param_pga_json;
+	std::string param_nga_json;
 
 	int pixelfmt_flags = 0xFF;
 	
@@ -53,9 +54,15 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-p")) {
 		do_palette = true;
 	}
+	
 	// PGA-specific
 	if(argparser.arg_isValid("-pga_json",1)) {
 		param_pga_json = argparser.arg_get("-pga_json",1).at(1);
+	}
+
+	// NGA-specific
+	if(argparser.arg_isValid("-nga_json",1)) {
+		param_nga_json = argparser.arg_get("-nga_json",1).at(1);
 	}
 
 	if(do_showusage) {
@@ -74,11 +81,11 @@ int main(int argc,const char* argv[]) {
 		std::exit(-1);
 	}
 
-	/*std::printf("out file: %s\n",param_outfile.c_str());
+	std::printf("out file: %s\n",param_outfile.c_str());
 	std::printf("src file: %s\n",param_srcfile.c_str());
 	std::printf("filetype: %s\n",param_filetype.c_str());
 	std::printf("pixelfmt: %s\n",param_pixelfmt.c_str());
-	std::printf("pga json: %s\n",param_pga_json.c_str());*/
+	std::printf("nga json: %s\n",param_nga_json.c_str());
 
 	/* convert ------------------------------------------*/
 	if(param_filetype == "mgi") {
@@ -159,6 +166,29 @@ int main(int argc,const char* argv[]) {
 			std::exit(-1);
 		}
 	} 
+	else if(param_filetype == "nga") {
+		/* get format -----------------------------------*/
+		const std::map<std::string,int> pixelformat_table = {
+			{"i4",aya::narumi_graphfmt::i4},
+			{"i8",aya::narumi_graphfmt::i8},
+			{"rgb",aya::narumi_graphfmt::rgb},
+		};
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto pic_blob = pic.convert_fileNGA(pixelfmt_flags, param_nga_json, do_compress);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
 	else {
 		std::printf("aya: error: unknown output filetype '%s'\n",param_filetype.c_str());
 		std::exit(-1);
@@ -185,9 +215,13 @@ static void disp_usage() {
 		"\t.PGI specifics:\n"
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4,argb8\n"
 		"\t.PGA specifics:\n"
-		"\t\t-pga_json <json>  specifies aseprite spritesheet .json to use\n"
+		"\t\t-pga_json <json> specifies aseprite spritesheet .json to use\n"
+		"\t.NGA specifics:\n"
+		"\t\tformats: i4,i8,rgb\n"
+		"\t\t-nga_json <json> specifies aseprite spritesheet .json to use\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
+	std::printf("\tavailable filetypes: mgi, pgi, pga, nga\n");
 };
 
 

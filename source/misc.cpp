@@ -60,6 +60,25 @@ auto aya::patchu_graphfmt::getBPP(int format) -> int {
 	}
 	return bpp;
 }
+auto aya::narumi_graphfmt::getBPP(int format) -> int {
+	auto format_id = narumi_graphfmt::getID(format);
+	if(!narumi_graphfmt::isValid(format)) {
+		puts("imgconv::narumi_graphfmt_getBPP(fmt): error: invalid format");
+		std::exit(-1);
+	}
+
+	int bpp = 0;
+	switch(format_id) {
+		case narumi_graphfmt::i4: { bpp = 4; break; }
+		case narumi_graphfmt::i8: { bpp = 8; break; }
+		case narumi_graphfmt::rgb: {
+			bpp = 16;
+			break;
+		}
+		default: break;
+	}
+	return bpp;
+}
 
 auto aya::version_get() -> CAyaVersion {
 	std::string build_date(__DATE__);

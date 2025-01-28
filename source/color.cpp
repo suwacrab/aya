@@ -23,6 +23,14 @@ namespace aya {
 		const auto short_b = ((uint32_t)b)>>3;
 		out_blob.write_u16(short_b | (short_g<<5) | (short_r<<11));
 	}
+	void CColor::write_rgb5a1_sat(Blob& out_blob,bool msb) const {
+		const auto short_r = ((uint32_t)r)>>3;
+		const auto short_g = ((uint32_t)g)>>3;
+		const auto short_b = ((uint32_t)b)>>3;
+		uint16_t num = short_r | (short_g<<5) | (short_b<<10);
+		if(msb) num |= 0x8000;
+		out_blob.write_be_u16(num);
+	}
 	void CColor::write_rgb5a1(Blob& out_blob,int test) const {
 		uint32_t short_a = 1;
 		const auto short_r = ((uint32_t)r)>>3;
