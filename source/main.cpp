@@ -81,11 +81,11 @@ int main(int argc,const char* argv[]) {
 		std::exit(-1);
 	}
 
-	std::printf("out file: %s\n",param_outfile.c_str());
+	/*std::printf("out file: %s\n",param_outfile.c_str());
 	std::printf("src file: %s\n",param_srcfile.c_str());
 	std::printf("filetype: %s\n",param_filetype.c_str());
 	std::printf("pixelfmt: %s\n",param_pixelfmt.c_str());
-	std::printf("nga json: %s\n",param_nga_json.c_str());
+	std::printf("nga json: %s\n",param_nga_json.c_str());*/
 
 	/* convert ------------------------------------------*/
 	if(param_filetype == "mgi") {
