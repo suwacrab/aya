@@ -9,8 +9,9 @@ NGA files contain 4 main sections:
 	*	each section has a 4-byte header (except for the bitmap section!)
 	*	NOTE: not true ^
 	*	header section
-		-	word: format
-		-	word: framecount
+		-	long: format
+		-	word: frame count
+		-	word: total subframe count
 		-	long: frame section offset
 		-	long: subframe section offset
 		-	long: palette section offset
@@ -616,8 +617,9 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	size_t offset_paletsection = offset_subframesection + blob_subframesection.size();
 	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
 
-	blob_headersection.write_be_u16(format);
+	blob_headersection.write_be_u32(format);
 	blob_headersection.write_be_u16(num_frames);
+	blob_headersection.write_be_u16(subframe_index);
 
 	blob_headersection.write_be_u32(offset_framesection);
 	blob_headersection.write_be_u32(offset_subframesection);
