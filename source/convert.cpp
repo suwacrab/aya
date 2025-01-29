@@ -149,6 +149,13 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 		// get duration ---------------------------------@/
 		auto duration_secs = (double)duration_ms;
 		auto duration_frame = static_cast<int>((duration_secs/1000.0) / (1.0/60));
+		if(duration_frame == 0) {
+			printf("aya: warning: frame duration for frame %s[%d] is getting corrected to 1\n",
+				src_frame["frame"]["filename"].GetString(),
+				i
+			);
+			duration_frame = 1;
+		}
 
 		// get subframe (only one, since aseprite) ------@/
 		CPhoto sheetframe(width,height);
