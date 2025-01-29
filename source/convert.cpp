@@ -151,7 +151,7 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 		auto duration_frame = static_cast<int>((duration_secs/1000.0) / (1.0/60));
 		if(duration_frame == 0) {
 			printf("aya: warning: frame duration for frame %s[%d] is getting corrected to 1\n",
-				src_frame["frame"]["filename"].GetString(),
+				src_frame["filename"].GetString(),
 				i
 			);
 			duration_frame = 1;
