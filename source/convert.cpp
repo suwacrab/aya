@@ -29,11 +29,11 @@ NGA files contain 5 main sections:
 		*	then, for each subframe, it's the following:
 			0x00 | int      | bmp offset (divided by 8)
 			0x04 | int      | bmp size (divided by 8)
-			0x08 | int      | palette number
-			0x0C | int      | format
-			0x10 | short    | bitmap width (rounded up to nearest 8 dots)
-			0x12 | short[2] | bitmap dimensions (X,Y)
-			0x16 | short[2] | X,Y offset when drawing
+			0x08 | short    | palette number
+			0x0A | short    | format
+			0x0C | short    | bitmap width (rounded up to nearest 8 dots)
+			0x0E | short[2] | bitmap dimensions (X,Y)
+			0x12 | short[2] | X,Y offset when drawing
 	*	palette section
 		0x00 | char[4]  | header ("PAL\0")
 		0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
@@ -566,8 +566,8 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	// write section headers ----------------------------@/
 	// bmp section's header is written later, though!
 	blob_headersection.write_str("NGA");
-	blob_framesection.write_str("FRM");
-	blob_subframesection.write_str("SUB");
+	blob_framesection.write_str("FR1");
+	blob_subframesection.write_str("FR2");
 	blob_paletsection.write_str("PAL");
 
 	size_t subframe_index = 0;
