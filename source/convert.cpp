@@ -621,6 +621,12 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 			blob_subframesection.write_be_u16(subframe.m_posX - useroffset_x);
 			blob_subframesection.write_be_u16(subframe.m_posY - useroffset_y);
 
+			printf("subframe dimensions[%d][%d]: (%4d,%4d) (rounded: %d)\n",
+				f,sf,
+				subframe_photoOrig.width(),
+				subframe_photo.height(),
+				rounded_width
+			);
 			subframe_index++;
 			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",
 				f,sf,bmpblob.size()
