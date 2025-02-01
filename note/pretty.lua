@@ -25,7 +25,7 @@ local ls_subframe = {
 local ls_subframeIn = {
 	{ 'bmp offset (divided by 8)', 'int' };
 	{ 'bmp size (divided by 8)', 'int' };
-	{ 'palette number', 'short' };
+	{ 'palette number', 'int' };
 	{ 'format', 'short' };
 	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
 	{ 'bitmap dimensions (X,Y)','short',2 };

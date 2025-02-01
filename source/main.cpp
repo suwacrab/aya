@@ -24,6 +24,7 @@ int main(int argc,const char* argv[]) {
 	bool do_palette = false;
 	bool do_compress = true;
 	bool do_showusage = false;
+	bool do_verbose = false;
 
 	std::string param_srcfile;
 	std::string param_outfile;
@@ -56,6 +57,9 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-p")) {
 		do_palette = true;
+	}
+	if(argparser.arg_isValid("-v")) {
+		do_verbose = true;
 	}
 	
 	// PGA-specific
@@ -195,7 +199,8 @@ int main(int argc,const char* argv[]) {
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
 			.useroffset_x = param_nga_useroffsetX,
-			.useroffset_y = param_nga_useroffsetY
+			.useroffset_y = param_nga_useroffsetY,
+			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGA(info);
 		if(!pic_blob.send_file(param_outfile)) {
@@ -224,6 +229,7 @@ static void disp_usage() {
 		"\t-t                twiddle texture\n"
 		"\t-nc               don't use gz compression\n"
 		"\t-p                use palette\n"
+		"\t-v                verbose flag\n"
 		"\t.MGI specifics:\n"
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4444\n"
 		"\t.PGI specifics:\n"

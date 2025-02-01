@@ -76,6 +76,7 @@ namespace aya {
 		int format;
 
 		int useroffset_x,useroffset_y;
+		bool verbose;
 	};
 
 	auto conv_po2(int n) -> int;
