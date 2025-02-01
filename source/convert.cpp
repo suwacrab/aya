@@ -548,7 +548,18 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
 	out_blob.write_blob(blob_bmp);
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
+auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blob {
+//	int format, const std::string& json_filename, bool do_compress) -> Blob {
+	
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+	const std::string filename_json = info.filename_json;
+	const bool do_compress = info.do_compress;
+
+	const int useroffset_x = info.useroffset_x;
+	const int useroffset_y = info.useroffset_y;
+
+	// setup frame list ---------------------------------@/
 	Blob out_blob;
 	Blob blob_headersection;
 	Blob blob_framesection;
@@ -558,7 +569,7 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 	Blob blob_bmpsection_real;
 
 	aya::CWorkingFrameList framelist;
-	framelist.create_fromAseJSON(*this,json_filename);
+	framelist.create_fromAseJSON(*this,filename_json);
 
 	const int num_frames = framelist.frame_count();
 	const int pad_size = 0x20;
@@ -607,8 +618,8 @@ auto aya::CPhoto::convert_fileNGA(int format, const std::string& json_filename, 
 			blob_subframesection.write_be_u16(rounded_width);
 			blob_subframesection.write_be_u16(subframe_photoOrig.width());
 			blob_subframesection.write_be_u16(subframe_photo.height());
-			blob_subframesection.write_be_u16(subframe.m_posX);
-			blob_subframesection.write_be_u16(subframe.m_posY);
+			blob_subframesection.write_be_u16(subframe.m_posX - useroffset_x);
+			blob_subframesection.write_be_u16(subframe.m_posY - useroffset_y);
 
 			subframe_index++;
 			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",

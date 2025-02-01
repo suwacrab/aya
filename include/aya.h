@@ -70,6 +70,14 @@ namespace aya {
 		}
 	};
 
+	struct CNarumiNGAConvertInfo {
+		std::string filename_json;
+		bool do_compress;
+		int format;
+
+		int useroffset_x,useroffset_y;
+	};
+
 	auto conv_po2(int n) -> int;
 	auto compress(Blob& srcblob, bool do_compress = true) -> Blob;
 	auto version_get() -> CAyaVersion;
@@ -189,7 +197,7 @@ class aya::CPhoto {
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
-		auto convert_fileNGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
+		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;

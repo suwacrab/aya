@@ -31,7 +31,10 @@ int main(int argc,const char* argv[]) {
 	std::string param_filetype;
 
 	std::string param_pga_json;
+	
 	std::string param_nga_json;
+	int param_nga_useroffsetX = 0;
+	int param_nga_useroffsetY = 0;
 
 	int pixelfmt_flags = 0xFF;
 	
@@ -63,6 +66,10 @@ int main(int argc,const char* argv[]) {
 	// NGA-specific
 	if(argparser.arg_isValid("-nga_json",1)) {
 		param_nga_json = argparser.arg_get("-nga_json",1).at(1);
+	}
+	if(argparser.arg_isValid("-nga_useroffset",2)) {
+		param_nga_useroffsetX = std::stoi(argparser.arg_get("-nga_useroffset",2).at(1));
+		param_nga_useroffsetY = std::stoi(argparser.arg_get("-nga_useroffset",2).at(2));
 	}
 
 	if(do_showusage) {
@@ -183,7 +190,14 @@ int main(int argc,const char* argv[]) {
 		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
-		auto pic_blob = pic.convert_fileNGA(pixelfmt_flags, param_nga_json, do_compress);
+		auto info = (aya::CNarumiNGAConvertInfo){
+			.filename_json = param_nga_json,
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.useroffset_x = param_nga_useroffsetX,
+			.useroffset_y = param_nga_useroffsetY
+		};
+		auto pic_blob = pic.convert_fileNGA(info);
 		if(!pic_blob.send_file(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
@@ -219,6 +233,7 @@ static void disp_usage() {
 		"\t.NGA specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-nga_json <json> specifies aseprite spritesheet .json to use\n"
+		"\t\t-nga_useroffset <x> <y> specifies aseprite spritesheet .json to use\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
 	std::printf("\tavailable filetypes: mgi, pgi, pga, nga\n");
