@@ -613,7 +613,7 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 			blob_bmpsection.write_blob(bmpblob);
 			
 			blob_subframesection.write_be_u32(bmpblob.size()/8);
-			blob_subframesection.write_be_u16(palette_num);
+			blob_subframesection.write_be_u32(palette_num);
 			blob_subframesection.write_be_u16(format);
 			blob_subframesection.write_be_u16(rounded_width);
 			blob_subframesection.write_be_u16(subframe_photoOrig.width());
