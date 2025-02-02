@@ -736,10 +736,6 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 		std::exit(-1);	
 	}
 
-	if(info.verbose) {
-		std::printf("subimage used: %s\n", use_subimage? "yes" : "no");
-	}
-
 	// setup bitmap info --------------------------------@/
 	Blob out_blob;
 	Blob blob_headersection;
@@ -765,6 +761,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 		for(auto pic : imagetable) {
 			auto bmpblob = pic->convert_rawNGI(format);
 			blob_bmpsection.write_blob(bmpblob);
+			subimage_datasize = bmpblob.size();
 		}
 	} else {
 		// get bitmap data ------------------------------@/
@@ -804,6 +801,12 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	}
 
 	// create header ------------------------------------@/
+	if(info.verbose) {
+		std::printf("CEL section: %.2f K\n",
+			((float)blob_bmpsection_real.size()) / 1024.0
+		);
+	}
+	
 	blob_bmpsection_real.pad(pad_size);
 	blob_paletsection.pad(pad_size);
 	
@@ -826,6 +829,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_paletsection);
 	out_blob.write_blob(blob_bmpsection_real);
+
 	return out_blob;
 }
 
