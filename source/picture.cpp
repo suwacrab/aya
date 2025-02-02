@@ -163,6 +163,38 @@ namespace aya {
 		return dot_getRawC(x,y);
 	}
 
+	auto CPhoto::rect_split(int size_x, int size_y, int count) -> std::vector<std::shared_ptr<CPhoto>> {
+		// check if specifiedsize is correct ------------@/
+		bool size_invalid = false;
+		if((width()%size_x) != 0) size_invalid = true;
+		if((height()%size_y) != 0) size_invalid = true;
+		if(size_x<= 0 || size_y <= 0) size_invalid = true;
+
+		if(size_invalid) {
+			std::printf("aya::CPhoto::rect_split(): error: invalid sub-size (%d,%d)\n",
+				size_x,size_y
+			);
+			std::exit(-1);
+		}
+
+		// split into multiple images
+		int num_rows = (width() / size_x);
+		int num_cols = (height() / size_y);
+		int num_images = num_rows * num_cols;
+		if(count != -1) num_images = count;
+
+		std::vector<std::shared_ptr<CPhoto>> images;
+		
+		for(int i=0; i<num_images; i++) {
+			int src_x = size_x * (i % (width() / size_x));
+			int src_y = size_y * (i / num_rows);
+			images.push_back(
+				rect_get(src_x,src_y,size_x,size_y)
+			);
+		}
+
+		return images;
+	}
 	auto CPhoto::rect_blit(CPhoto& outpic,int sx,int sy,int dx,int dy,int w,int h) const -> void {
 		if(w == 0) w = width();
 		if(h == 0) h = height();

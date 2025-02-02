@@ -37,6 +37,9 @@ int main(int argc,const char* argv[]) {
 	int param_nga_useroffsetX = 0;
 	int param_nga_useroffsetY = 0;
 
+	int param_ngi_subimageX = 0;
+	int param_ngi_subimageY = 0;
+
 	int pixelfmt_flags = 0xFF;
 	
 	if(argparser.arg_isValid("--help")) {
@@ -74,6 +77,12 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-nga_useroffset",2)) {
 		param_nga_useroffsetX = std::stoi(argparser.arg_get("-nga_useroffset",2).at(1));
 		param_nga_useroffsetY = std::stoi(argparser.arg_get("-nga_useroffset",2).at(2));
+	}
+
+	// NGI-specific
+	if(argparser.arg_isValid("-ngi_subimage",2)) {
+		param_ngi_subimageX = std::stoi(argparser.arg_get("-ngi_subimage",2).at(1));
+		param_ngi_subimageY = std::stoi(argparser.arg_get("-ngi_subimage",2).at(2));
 	}
 
 	if(do_showusage) {
@@ -208,6 +217,36 @@ int main(int argc,const char* argv[]) {
 			std::exit(-1);
 		}
 	} 
+	else if(param_filetype == "ngi") {
+		/* get format -----------------------------------*/
+		const std::map<std::string,int> pixelformat_table = {
+			{"i4",aya::narumi_graphfmt::i4},
+			{"i8",aya::narumi_graphfmt::i8},
+			{"rgb",aya::narumi_graphfmt::rgb},
+		};
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CNarumiNGIConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.subimage_xsize = param_ngi_subimageX,
+			.subimage_ysize = param_ngi_subimageY,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileNGI(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
 	else {
 		std::printf("aya: error: unknown output filetype '%s'\n",param_filetype.c_str());
 		std::exit(-1);
@@ -239,10 +278,13 @@ static void disp_usage() {
 		"\t.NGA specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-nga_json <json> specifies aseprite spritesheet .json to use\n"
-		"\t\t-nga_useroffset <x> <y> specifies aseprite spritesheet .json to use\n"
+		"\t\t-nga_useroffset <x> <y> offsets each subframe by (x,y)\n"
+		"\t.NGI specifics:\n"
+		"\t\tformats: i4,i8,rgb\n"
+		"\t\t-ngi_subimage <x> <y> divides image into subimages, each with size (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: mgi, pgi, pga, nga\n");
+	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi\n");
 };
 
 

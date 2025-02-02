@@ -79,6 +79,13 @@ namespace aya {
 		bool verbose;
 	};
 
+	struct CNarumiNGIConvertInfo {
+		bool do_compress;
+		int format;
+		int subimage_xsize,subimage_ysize;
+		bool verbose;
+	};
+
 	auto conv_po2(int n) -> int;
 	auto compress(Blob& srcblob, bool do_compress = true) -> Blob;
 	auto version_get() -> CAyaVersion;
@@ -191,6 +198,7 @@ class aya::CPhoto {
 		auto palet_get(int pen) const -> aya::CColor;
 
 		auto rect_blit(CPhoto& outpic,int sx,int sy,int dx,int dy,int w=0,int h=0) const -> void;
+		auto rect_split(int size_x, int size_y, int count = -1) -> std::vector<std::shared_ptr<CPhoto>>;
 		auto rect_get(int x,int y,int w=0,int h=0) const -> std::shared_ptr<CPhoto>;
 		auto rect_isZero(int x, int y, int w, int h) const -> bool;
 		auto all_equals(aya::CColor color) const -> bool;
@@ -199,6 +207,7 @@ class aya::CPhoto {
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
 		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
+		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;

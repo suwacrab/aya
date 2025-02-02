@@ -44,9 +44,22 @@ local ls_bitmap = {
 	{ 'bitmap data (zlib-compressed)', 'char',0 };
 }
 
+local ls_ngi_header = {
+	{ 'header ("NGI\\0")','char',4 };
+	{ 'format','int' };
+	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
+	{ 'bitmap dimensions (X,Y)', 'short', 2 };
+	{ 'sub-image count', 'short' };
+	{ 'sub-image dimensions','short', 2 };
+	{ 'size of each sub-image', 'int' };
+	{ 'palette section offset','int' };
+	{ 'bitmap section offset','int' };
+}
+
 local printf = function(str,...) print(str:format(...)) end
 
 local function print_flist(fl)
+	print("entry!")
 	local sizes = {
 		['char'] = 1;
 		['short'] = 2;
@@ -76,6 +89,7 @@ print_flist(ls_subframe)
 print_flist(ls_subframeIn)
 print_flist(ls_palet)
 print_flist(ls_bitmap)
+print_flist(ls_ngi_header)
 
 end
 
