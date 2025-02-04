@@ -762,6 +762,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	return out_blob;
 }
 auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blob {
+	/*
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const bool do_compress = info.do_compress;
@@ -769,9 +770,9 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	int max_numtiles = 1024;
 	if(info.is_12bit) max_numtiles <<= 2;
 
-	if(width%8 != 0) {
+	if(width()%8 != 0) {
 		std::puts("aya::CPhoto::convert_fileNGM(): error: image X size must be multiple of 8!!");
-		std::exit(-1)	
+		std::exit(-1);
 	}
 
 	// setup bitmap info --------------------------------@/
@@ -866,5 +867,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	out_blob.write_blob(blob_bmpsection_real);
 
 	return out_blob;
+	*/
+	return Blob();
 }
 

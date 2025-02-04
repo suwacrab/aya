@@ -23,6 +23,14 @@ make clean && make all
 ```
 
 ---
+# Usage
+---
+
+```
+aya -i <source image> 
+```
+
+---
 # Format specification
 ---
 

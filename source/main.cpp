@@ -20,7 +20,6 @@ int main(int argc,const char* argv[]) {
 	}
 
 	/* read command-line inputs -------------------------*/
-	bool do_twiddle = false;
 	bool do_palette = false;
 	bool do_compress = true;
 	bool do_showusage = false;
@@ -30,6 +29,8 @@ int main(int argc,const char* argv[]) {
 	std::string param_outfile;
 	std::string param_pixelfmt;
 	std::string param_filetype;
+
+	bool param_mgi_twiddled = false;
 
 	std::string param_pga_json;
 	
@@ -65,6 +66,11 @@ int main(int argc,const char* argv[]) {
 		do_verbose = true;
 	}
 	
+	// MGI-specific
+	if(argparser.arg_isValid("mgi_twiddled")) {
+		param_mgi_twiddled = true;
+	}
+
 	// PGA-specific
 	if(argparser.arg_isValid("-pga_json",1)) {
 		param_pga_json = argparser.arg_get("-pga_json",1).at(1);
@@ -125,7 +131,7 @@ int main(int argc,const char* argv[]) {
 		}
 
 		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
-		if(!do_twiddle) pixelfmt_flags |= aya::marisa_graphfmt::nontwiddled;
+		if(!param_mgi_twiddled) pixelfmt_flags |= aya::marisa_graphfmt::nontwiddled;
 		
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_fileMGI(pixelfmt_flags, do_compress);
@@ -265,26 +271,26 @@ static void disp_usage() {
 		"\t-o <output_file>  specify output filename\n"
 		"\t-i <source_file>  specify source filename\n"
 		"\t-fmt <fmt> <type> specify output's pixel format & filetype\n"
-		"\t-t                twiddle texture\n"
 		"\t-nc               don't use gz compression\n"
 		"\t-p                use palette\n"
 		"\t-v                verbose flag\n"
 		"\t.MGI specifics:\n"
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4444\n"
+		"\t\t-mgi_twiddled           twiddle texture\n"
 		"\t.PGI specifics:\n"
 		"\t\tformats: i4,i8,rgb565,rgb5a1,argb4,argb8\n"
 		"\t.PGA specifics:\n"
-		"\t\t-pga_json <json> specifies aseprite spritesheet .json to use\n"
+		"\t\t-pga_json <json>        specifies aseprite spritesheet .json to use\n"
 		"\t.NGA specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
-		"\t\t-nga_json <json> specifies aseprite spritesheet .json to use\n"
+		"\t\t-nga_json <json>        specifies aseprite spritesheet .json to use\n"
 		"\t\t-nga_useroffset <x> <y> offsets each subframe by (x,y)\n"
 		"\t.NGI specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
-		"\t\t-ngi_subimage <x> <y> divides image into subimages, each with size (x,y)\n"
+		"\t\t-ngi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi\n");
+	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 
