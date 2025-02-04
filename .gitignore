@@ -2,10 +2,6 @@ build/*.o
 build/*.d
 bin/*.exe
 
-workdata/*.pga
-workdata/*.nga
-workdata/*.ngi
-workdata/*.pal
-workdata/*.png
-workdata/*.bmp
-workdata/*.json
+workdata/*
+!workdata/.gitkeep
+

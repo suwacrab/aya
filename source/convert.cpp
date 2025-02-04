@@ -68,6 +68,21 @@ NGI files contain 3 sections:
 		0x04 | int      | bitmap size (uncompressed)
 		0x08 | int      | bitmap size (compressed)
 		0x0C | char[]   | bitmap data (zlib-compressed)
+
+NGM files contain 4 sections:
+	*	header section
+	*	map section
+	*	palette section
+		0x00 | char[4]  | header ("PAL\0")
+		0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
+		*	then, only if the file has a palette, the following:
+			0x08 | int      | palette size (compressed)
+			0x0C | short[]  | palette data (zlib-compressed)
+	*	bitmap section
+		0x00 | char[4]  | header ("CEL\0")
+		0x04 | int      | bitmap size (uncompressed)
+		0x08 | int      | bitmap size (compressed)
+		0x0C | char[]   | bitmap data (zlib-compressed)
 */
 #include <aya.h>
 #include <functional>
@@ -753,6 +768,112 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	// write section headers ----------------------------@/
 	// bmp section's header is written later, though!
 	blob_headersection.write_str("NGI");
+	blob_paletsection.write_str("PAL");
+
+	// write frames -------------------------------------@/
+	if(use_subimage) {
+		auto imagetable = rect_split(subimage_xsize,subimage_ysize);
+		for(auto pic : imagetable) {
+			auto bmpblob = pic->convert_rawNGI(format);
+			blob_bmpsection.write_blob(bmpblob);
+			subimage_datasize = bmpblob.size();
+		}
+	} else {
+		// get bitmap data ------------------------------@/
+		CPhoto new_photo(
+			bitmap_widthReal,
+			bitmap_height
+		);
+		// copy to slightly-bigger photo
+		rect_blit(new_photo,0,0,0,0); 
+
+		// write bitmap data ----------------------------@/
+		auto bmpblob = new_photo.convert_rawNGI(format);
+		blob_bmpsection.write_blob(bmpblob);
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::narumi_graphfmt::getBPP(format) <= 8) {
+		Blob palet_blob;
+		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
+		for(int p=0; p<color_count; p++) {
+			palet_get(p).write_rgb5a1_sat(palet_blob,true);
+		}
+		auto palet_blobComp = aya::compress(palet_blob,do_compress);
+		blob_paletsection.write_be_u32(palet_blob.size());
+		blob_paletsection.write_be_u32(palet_blobComp.size());
+		blob_paletsection.write_blob(palet_blobComp);
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// fix up bmp section -------------------------------@/
+	blob_bmpsection_real.write_str("CEL"); {
+		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
+		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
+		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
+		blob_bmpsection_real.write_blob(bmpblobComp);
+	}
+
+	// create header ------------------------------------@/
+	if(info.verbose) {
+		std::printf("CEL section: %.2f K\n",
+			((float)blob_bmpsection_real.size()) / 1024.0
+		);
+	}
+	
+	blob_bmpsection_real.pad(pad_size);
+	blob_paletsection.pad(pad_size);
+	
+	size_t offset_paletsection = pad_size;
+	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
+
+	blob_headersection.write_be_u32(format);
+
+	blob_headersection.write_be_u16(bitmap_widthReal);
+	blob_headersection.write_be_u16(bitmap_width);
+	blob_headersection.write_be_u16(bitmap_height);
+	blob_headersection.write_be_u16(subimage_count);
+	blob_headersection.write_be_u16(subimage_xsize);
+	blob_headersection.write_be_u16(subimage_ysize);
+	blob_headersection.write_be_u32(subimage_datasize);
+	blob_headersection.write_be_u32(offset_paletsection);
+	blob_headersection.write_be_u32(offset_bmpsection);
+	blob_headersection.pad(pad_size);
+
+	out_blob.write_blob(blob_headersection);
+	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_bmpsection_real);
+
+	return out_blob;
+}
+auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blob {
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+	const bool do_compress = info.do_compress;
+
+	int max_numtiles = 1024;
+	if(info.is_12bit) max_numtiles <<= 2;
+
+	if(width%8 != 0) {
+		std::puts("aya::CPhoto::convert_fileNGM(): error: image X size must be multiple of 8!!");
+		std::exit(-1)	
+	}
+
+	// setup bitmap info --------------------------------@/
+	Blob out_blob;
+	Blob blob_headersection;
+	Blob blob_paletsection;
+	Blob blob_mapsection;
+	Blob blob_bmpsection;
+	Blob blob_bmpsection_real;
+
+	const int pad_size = 0x800;
+
+	// write section headers ----------------------------@/
+	// bmp section's header is written later, though!
+	blob_headersection.write_str("NGI");
+	blob_mapsection.write_str("CHP");
 	blob_paletsection.write_str("PAL");
 
 	// write frames -------------------------------------@/

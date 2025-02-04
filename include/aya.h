@@ -78,11 +78,16 @@ namespace aya {
 		int useroffset_x,useroffset_y;
 		bool verbose;
 	};
-
 	struct CNarumiNGIConvertInfo {
 		bool do_compress;
 		int format;
 		int subimage_xsize,subimage_ysize;
+		bool verbose;
+	};
+	struct CNarumiNGMConvertInfo {
+		bool do_compress;
+		int format;
+		int is_12bit;
 		bool verbose;
 	};
 
@@ -208,6 +213,7 @@ class aya::CPhoto {
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
 		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
 		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
+		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;
