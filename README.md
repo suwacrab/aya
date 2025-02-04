@@ -1,7 +1,5 @@
 An image converter i've been using for my projects. Use it at your own risk.
 
-Requires clang, zlib, and freeimage.
-
 available formats:
 
 -	PC (mostly unused): `.PGA`, `.PGI`
@@ -13,8 +11,22 @@ available formats:
 	*	`.NGM`: Used for storing tilemaps.
 
 ---
+# Building
+---
+
+Requires clang, zlib, and freeimage.
+
+to build:
+
+```
+make clean && make all
+```
+
+---
 # Format specification
 ---
+
+Expect all the formats' specifications to be changing rapidly.
 
 ### Saturn
 ---
@@ -23,6 +35,9 @@ NGA files are used for storing 2D animations, with each frame being stored
 sequentially one frame after the other. Each frame is also divided into
 subframes, for animations that use multiple layers/parts (WIP, animations only
 have 1 subframe per frame, for now.)
+
+NGA files are created by supplying a .json file (exported from aseprite), along
+with a source image.
 
 ```
 *	header section
@@ -64,7 +79,8 @@ have 1 subframe per frame, for now.)
 ```
 
 NGI files are bitmaps that contain one, static image. Optionally,
-they may be split into multiple sub-images. (e.g for fonts, image atlases, etc.)
+their bitmap data may be stored split into multiple sub-images. (e.g for fonts,
+image atlases, etc.)
 
 ```
 *	header section
@@ -90,12 +106,11 @@ they may be split into multiple sub-images. (e.g for fonts, image atlases, etc.)
 	0x0C | char[]   | bitmap data (zlib-compressed)
 ```
 
-NGM files contain 4 sections:
+NGM files (WIP.)
 
 ```
 *	header section
 *	map section
-	
 *	palette section
 	0x00 | char[4]  | header ("PAL\0")
 	0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
