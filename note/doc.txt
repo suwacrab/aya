@@ -9,17 +9,19 @@ capable of converting image formats to use on DC.
 -----------------------------------------------------------------------------@/
 marisa texture format word:
 	Bits
-	--------:nnnnnnnn
-		- format ID
+	FEDCBA98:nnnnnnnn
+		- bits 0~7: format ID
 			0: i4, 4bpp indexed color
 			1: i8, 8bpp indexed color
 			2: rgb565, 16-bit color
 			3: rgb5a1, 16-bit color (1-bit alpha)
 			4: argb4444 16-bit color (4-bit alpha)
 	-------t:--------
-		- nontwiddle-bit, set if texture isn't twiddled
+		- bit 8: nontwiddle-bit
+		- set if texture isn't twiddled
 	------s-:--------
-		- strided bit, set if texture is strided
+		- bit 9: strided bit
+		- set if texture is strided
 
 MGI file format:
 	- Header
@@ -35,7 +37,8 @@ MGI file format:
 		u32 bmpdata_offset;         // bitmap data offset
 
 		* If a bitmap's width & height are 160x100, the real dimensions would
-		be 256x128.
+		be 256x128. the "original" dimensions (160x100) are still stored
+		alongside the real ones, though.
 	- Palette
 		* uncompressed.
 		* images may specify to exclude the palette; if so, palette_size &
