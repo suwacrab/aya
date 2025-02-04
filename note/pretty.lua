@@ -62,22 +62,15 @@ local ls_ngm_header = {
 	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
 	{ 'bitmap dimensions (X,Y)', 'short', 2 };
 	{ 'sub-image count', 'short' };
-	{ 'sub-image dimensions','short', 2 };
 	{ 'size of each sub-image', 'int' };
 	{ 'palette section offset','int' };
+	{ 'map section offset','int' };
 	{ 'bitmap section offset','int' };
 }
 
 local ls_ngm_map = {
-	{ 'header ("NGM\\0")','char',4 };
-	{ 'format','int' };
-	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
-	{ 'bitmap dimensions (X,Y)', 'short', 2 };
-	{ 'sub-image count', 'short' };
-	{ 'sub-image dimensions','short', 2 };
-	{ 'size of each sub-image', 'int' };
-	{ 'palette section offset','int' };
-	{ 'bitmap section offset','int' };
+	{ 'header ("CHP\\0")','char',4 };
+	{ 'map dimensions (X,Y)', 'short', 2 };
 }
 
 local printf = function(str,...) print(str:format(...)) end
