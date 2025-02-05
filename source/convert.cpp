@@ -866,7 +866,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 
 				if(index > max_numtiles) {
 					std::printf(
-						"aya::CPhoto::convert_fileNGM(): error: cel count over! (cel count: >=%3d\n"
+						"aya::CPhoto::convert_fileNGM(): error: cel count over! (cel count: >=%3d)\n"
 						"consider using the 12-bit flag to use more tiles.\n",
 						index
 					);
