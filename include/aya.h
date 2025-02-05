@@ -208,6 +208,9 @@ class aya::CPhoto {
 		auto rect_isZero(int x, int y, int w, int h) const -> bool;
 		auto all_equals(aya::CColor color) const -> bool;
 		
+		auto hash_get(int flip) const -> uint64_t;
+		auto hash_getIndexed(int flip) const -> uint64_t;
+
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;

@@ -3,6 +3,7 @@
 #include <rapidjson/document.h>
 
 #include <cmath>
+#include <map>
 
 constexpr int PGA_TILE_SIZE = 32;
 constexpr int PGA_LINE_SIZE = 16;
@@ -762,7 +763,6 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	return out_blob;
 }
 auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blob {
-	/*
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const bool do_compress = info.do_compress;
@@ -780,37 +780,80 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	Blob blob_headersection;
 	Blob blob_paletsection;
 	Blob blob_mapsection;
+	Blob blob_mapsection_real;
 	Blob blob_bmpsection;
 	Blob blob_bmpsection_real;
 
 	const int pad_size = 0x800;
+	int subimage_count = 0;
+	size_t subimage_datasize = 0;
 
 	// write section headers ----------------------------@/
-	// bmp section's header is written later, though!
-	blob_headersection.write_str("NGI");
-	blob_mapsection.write_str("CHP");
+	// bmp & map section's header is written later, though!
+	blob_headersection.write_str("NGM");
 	blob_paletsection.write_str("PAL");
 
 	// write frames -------------------------------------@/
-	if(use_subimage) {
-		auto imagetable = rect_split(subimage_xsize,subimage_ysize);
-		for(auto pic : imagetable) {
-			auto bmpblob = pic->convert_rawNGI(format);
-			blob_bmpsection.write_blob(bmpblob);
-			subimage_datasize = bmpblob.size();
-		}
-	} else {
-		// get bitmap data ------------------------------@/
-		CPhoto new_photo(
-			bitmap_widthReal,
-			bitmap_height
-		);
-		// copy to slightly-bigger photo
-		rect_blit(new_photo,0,0,0,0); 
+	auto imagetable = rect_split(8,8); {
+		std::map<uint64_t,size_t> imghash_map;
+	//	size_t num_processedCel = 0;
 
-		// write bitmap data ----------------------------@/
-		auto bmpblob = new_photo.convert_rawNGI(format);
-		blob_bmpsection.write_blob(bmpblob);
+		for(auto srcpic : imagetable) {
+			if(subimage_count > max_numtiles) {
+				std::puts("aya::CPhoto::convert_fileNGM(): error: cel count over!");
+				std::exit(-1);
+			}
+			const std::array<uint64_t,4> image_hashes = {
+				srcpic->hash_getIndexed(0b00),
+				srcpic->hash_getIndexed(0b01),
+				srcpic->hash_getIndexed(0b10),
+				srcpic->hash_getIndexed(0b11)
+			};
+
+			bool found_used = false;
+			int tile_index = 0;
+			int flip_index = 0;
+
+			for(int fi=0; fi<4; fi++) {
+				if(imghash_map.count(image_hashes[fi]) > 0) {
+					flip_index = fi;
+					tile_index = imghash_map[image_hashes[fi]];
+					found_used = true;
+					
+					/*
+					auto get_tileXY = [=](int idx, int &x, int &y) {
+						x = 8 * (idx % (width()/8));
+						y = 8 * (idx / (width()/8));
+					};
+					
+					int src_x,src_y;
+					int cel_x,cel_y;
+					get_tileXY(num_processedCel,src_x,src_y);
+					get_tileXY(tile_index,cel_x,cel_y);
+					if(fi == 0) {
+						// printf("tile hit! (%3d,%3d) == tile %3d\n",src_x,src_y,tile_index);
+					} else {
+						printf("flip hit! (%3d,%3d) == tile %3d (%3d,%3d) [fi=%d]\n",src_x,src_y,tile_index,cel_x,cel_y,fi);
+					}
+					*/
+					break;
+				}
+			}
+
+			// write tile to bmp/map
+			if(found_used) {
+				blob_mapsection.write_be_u16(tile_index | (flip_index<<10));
+			} else {
+				imghash_map[image_hashes[0]] = subimage_count;
+				auto bmpblob = srcpic->convert_rawNGI(format);
+				blob_bmpsection.write_blob(bmpblob);
+				blob_mapsection.write_be_u16(subimage_count);
+				subimage_datasize = bmpblob.size();
+				subimage_count++;
+			}
+
+		//	num_processedCel++;
+		}
 	}
 
 	// create palette -----------------------------------@/
@@ -828,7 +871,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		blob_paletsection.write_u32(0);
 	}
 
-	// fix up bmp section -------------------------------@/
+	// fix up sections ----------------------------------@/
 	blob_bmpsection_real.write_str("CEL"); {
 		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
@@ -836,38 +879,48 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		blob_bmpsection_real.write_blob(bmpblobComp);
 	}
 
+	blob_mapsection_real.write_str("CHP"); {
+		Blob mapblobComp = aya::compress(blob_mapsection,do_compress);
+		blob_mapsection_real.write_be_u32(blob_mapsection.size());
+		blob_mapsection_real.write_be_u32(mapblobComp.size());
+		blob_mapsection_real.write_blob(mapblobComp);
+	}
+
 	// create header ------------------------------------@/
 	if(info.verbose) {
-		std::printf("CEL section: %.2f K\n",
+		std::printf("\tCEL section: %.2f K\n",
 			((float)blob_bmpsection_real.size()) / 1024.0
+		);
+		std::printf("\tCHP section: %.2f K (n.cels == %d)\n",
+			((float)blob_mapsection_real.size()) / 1024.0,
+			subimage_count
 		);
 	}
 	
+	blob_mapsection_real.pad(pad_size);
 	blob_bmpsection_real.pad(pad_size);
 	blob_paletsection.pad(pad_size);
 	
 	size_t offset_paletsection = pad_size;
-	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
+	size_t offset_mapsection = offset_paletsection + blob_paletsection.size();
+	size_t offset_bmpsection = offset_mapsection + blob_mapsection_real.size();
 
 	blob_headersection.write_be_u32(format);
 
-	blob_headersection.write_be_u16(bitmap_widthReal);
-	blob_headersection.write_be_u16(bitmap_width);
-	blob_headersection.write_be_u16(bitmap_height);
+	blob_headersection.write_be_u16(width());
+	blob_headersection.write_be_u16(width());
 	blob_headersection.write_be_u16(subimage_count);
-	blob_headersection.write_be_u16(subimage_xsize);
-	blob_headersection.write_be_u16(subimage_ysize);
-	blob_headersection.write_be_u32(subimage_datasize);
+	blob_headersection.write_be_u16(subimage_datasize);
 	blob_headersection.write_be_u32(offset_paletsection);
+	blob_headersection.write_be_u32(offset_mapsection);
 	blob_headersection.write_be_u32(offset_bmpsection);
 	blob_headersection.pad(pad_size);
 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_mapsection_real);
 	out_blob.write_blob(blob_bmpsection_real);
 
 	return out_blob;
-	*/
-	return Blob();
 }
 

@@ -42,6 +42,9 @@ int main(int argc,const char* argv[]) {
 	int param_ngi_subimageY = 0;
 
 	int pixelfmt_flags = 0xFF;
+
+	std::string param_exportpal_filename;
+	std::string param_exportpal_format;
 	
 	if(argparser.arg_isValid("--help")) {
 		do_showusage = true;
@@ -65,7 +68,11 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-v")) {
 		do_verbose = true;
 	}
-	
+	if(argparser.arg_isValid("-pexport",2)) {
+		param_exportpal_filename = argparser.arg_get("-pexport",2).at(1);
+		param_exportpal_format = argparser.arg_get("-pexport",2).at(2);	
+	}
+
 	// MGI-specific
 	if(argparser.arg_isValid("mgi_twiddled")) {
 		param_mgi_twiddled = true;
@@ -113,24 +120,55 @@ int main(int argc,const char* argv[]) {
 	std::printf("pixelfmt: %s\n",param_pixelfmt.c_str());
 	std::printf("nga json: %s\n",param_nga_json.c_str());*/
 
-	/* convert ------------------------------------------*/
+	// export palette -----------------------------------@/
+	if(!param_exportpal_filename.empty()) {
+		//auto pal_format = param_exportpal_format;
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		Blob pal_blob;
+		for(int i=0; i<256; i++) {
+			pal_blob.write_u8(pic.palet_get(i).r);
+			pal_blob.write_u8(pic.palet_get(i).g);
+			pal_blob.write_u8(pic.palet_get(i).b);
+		}
+		// quick-export 
+		if(!pal_blob.send_file(param_exportpal_filename)) {
+			std::printf("aya: error: unable to write to file %s\n",param_exportpal_filename.c_str());
+			std::exit(-1);
+		}
+	}
+
+	// convert ------------------------------------------@/
+	const std::map<std::string,int> pixelformat_table_marisa = {
+		{"i4",aya::marisa_graphfmt::i4},
+		{"i8",aya::marisa_graphfmt::i8},
+		{"rgb565",aya::marisa_graphfmt::rgb565},
+		{"rgb5a1",aya::marisa_graphfmt::rgb5a1},
+		{"argb4444",aya::marisa_graphfmt::argb4444}
+	};
+	static const std::map<std::string,int> pixelformat_table_patchouli = {
+		{"i4",aya::patchu_graphfmt::i4},
+		{"i8",aya::patchu_graphfmt::i8},
+		{"rgb565",aya::patchu_graphfmt::rgb565},
+		{"rgb5a1",aya::patchu_graphfmt::rgb5a1},
+		{"argb4",aya::patchu_graphfmt::argb4},
+		{"argb8",aya::patchu_graphfmt::argb8}
+	};
+	static const std::map<std::string,int> pixelformat_table_narumi = {
+		{"i4",aya::narumi_graphfmt::i4},
+		{"i8",aya::narumi_graphfmt::i8},
+		{"rgb",aya::narumi_graphfmt::rgb},
+	};
+
 	if(param_filetype == "mgi") {
 		/* get format -----------------------------------*/
-		const std::map<std::string,int> pixelformat_table = {
-			{"i4",aya::marisa_graphfmt::i4},
-			{"i8",aya::marisa_graphfmt::i8},
-			{"rgb565",aya::marisa_graphfmt::rgb565},
-			{"rgb5a1",aya::marisa_graphfmt::rgb5a1},
-			{"argb4444",aya::marisa_graphfmt::argb4444}
-		};
-		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+		if(pixelformat_table_marisa.count(param_pixelfmt) <= 0) {
 			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
 				param_pixelfmt.c_str()
 			);
 			std::exit(-1);
 		}
 
-		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+		pixelfmt_flags = pixelformat_table_marisa.at(param_pixelfmt);
 		if(!param_mgi_twiddled) pixelfmt_flags |= aya::marisa_graphfmt::nontwiddled;
 		
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
@@ -142,22 +180,14 @@ int main(int argc,const char* argv[]) {
 	} 
 	else if(param_filetype == "pgi") {
 		/* get format -----------------------------------*/
-		const std::map<std::string,int> pixelformat_table = {
-			{"i4",aya::patchu_graphfmt::i4},
-			{"i8",aya::patchu_graphfmt::i8},
-			{"rgb565",aya::patchu_graphfmt::rgb565},
-			{"rgb5a1",aya::patchu_graphfmt::rgb5a1},
-			{"argb4",aya::patchu_graphfmt::argb4},
-			{"argb8",aya::patchu_graphfmt::argb8}
-		};
-		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+		if(pixelformat_table_patchouli.count(param_pixelfmt) <= 0) {
 			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
 				param_pixelfmt.c_str()
 			);
 			std::exit(-1);
 		}
 
-		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+		pixelfmt_flags = pixelformat_table_patchouli.at(param_pixelfmt);
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_filePGI(pixelfmt_flags, do_compress);
@@ -168,22 +198,14 @@ int main(int argc,const char* argv[]) {
 	} 
 	else if(param_filetype == "pga") {
 		/* get format -----------------------------------*/
-		const std::map<std::string,int> pixelformat_table = {
-			{"i4",aya::patchu_graphfmt::i4},
-			{"i8",aya::patchu_graphfmt::i8},
-			{"rgb565",aya::patchu_graphfmt::rgb565},
-			{"rgb5a1",aya::patchu_graphfmt::rgb5a1},
-			{"argb4",aya::patchu_graphfmt::argb4},
-			{"argb8",aya::patchu_graphfmt::argb8}
-		};
-		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+		if(pixelformat_table_patchouli.count(param_pixelfmt) <= 0) {
 			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
 				param_pixelfmt.c_str()
 			);
 			std::exit(-1);
 		}
 
-		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+		pixelfmt_flags = pixelformat_table_patchouli.at(param_pixelfmt);
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_filePGA(pixelfmt_flags, param_pga_json, do_compress);
@@ -194,19 +216,14 @@ int main(int argc,const char* argv[]) {
 	} 
 	else if(param_filetype == "nga") {
 		/* get format -----------------------------------*/
-		const std::map<std::string,int> pixelformat_table = {
-			{"i4",aya::narumi_graphfmt::i4},
-			{"i8",aya::narumi_graphfmt::i8},
-			{"rgb",aya::narumi_graphfmt::rgb},
-		};
-		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+		if(pixelformat_table_narumi.count(param_pixelfmt) <= 0) {
 			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
 				param_pixelfmt.c_str()
 			);
 			std::exit(-1);
 		}
 
-		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+		pixelfmt_flags = pixelformat_table_narumi.at(param_pixelfmt);
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto info = (aya::CNarumiNGAConvertInfo){
@@ -225,19 +242,14 @@ int main(int argc,const char* argv[]) {
 	} 
 	else if(param_filetype == "ngi") {
 		/* get format -----------------------------------*/
-		const std::map<std::string,int> pixelformat_table = {
-			{"i4",aya::narumi_graphfmt::i4},
-			{"i8",aya::narumi_graphfmt::i8},
-			{"rgb",aya::narumi_graphfmt::rgb},
-		};
-		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+		if(pixelformat_table_narumi.count(param_pixelfmt) <= 0) {
 			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
 				param_pixelfmt.c_str()
 			);
 			std::exit(-1);
 		}
 
-		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+		pixelfmt_flags = pixelformat_table_narumi.at(param_pixelfmt);
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto info = (aya::CNarumiNGIConvertInfo){
@@ -248,6 +260,30 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGI(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
+	else if(param_filetype == "ngm") {
+		/* get format -----------------------------------*/
+		if(pixelformat_table_narumi.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table_narumi.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CNarumiNGMConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.is_12bit = false,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileNGM(info);
 		if(!pic_blob.send_file(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);

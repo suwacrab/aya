@@ -59,10 +59,9 @@ local ls_ngi_header = {
 local ls_ngm_header = {
 	{ 'header ("NGM\\0")','char',4 };
 	{ 'format','int' };
-	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
 	{ 'bitmap dimensions (X,Y)', 'short', 2 };
 	{ 'sub-image count', 'short' };
-	{ 'size of each sub-image', 'int' };
+	{ 'size of each sub-image', 'short' };
 	{ 'palette section offset','int' };
 	{ 'map section offset','int' };
 	{ 'bitmap section offset','int' };
@@ -71,6 +70,9 @@ local ls_ngm_header = {
 local ls_ngm_map = {
 	{ 'header ("CHP\\0")','char',4 };
 	{ 'map dimensions (X,Y)', 'short', 2 };
+	{ 'map data size (uncompressed)', 'int' };
+	{ 'map data size (compressed)', 'int' };
+	{ 'map data size (zlib-compressed)', 'char',0 };
 }
 
 local printf = function(str,...) print(str:format(...)) end
@@ -84,17 +86,23 @@ local function print_flist(fl)
 	}
 	local offset = 0
 	for _,entry in next,fl do
-		local count = entry[3]
-		local ftype = entry[2]
+		local count <const> = entry[3]
+		local ftype <const> = entry[2]
+		local ftype_str = entry[2]
 		if count then
 			if count == 0 then
-				ftype = ("%s[]"):format(ftype)
+				ftype_str = ("%s[]"):format(ftype)
 			else
-				ftype = ("%s[%d]"):format(ftype,count)
+				ftype_str = ("%s[%d]"):format(ftype,count)
 			end
 		end
-		printf("0x%02X | %-8s | %s",offset,ftype,entry[1])
-		local size = sizes[entry[2]] * (count and count or 1)
+		if ftype ~= 'char' then
+			if (offset % sizes[ftype]) ~= 0 then
+				error("field is not aligned!")
+			end
+		end
+		printf("0x%02X | %-8s | %s",offset,ftype_str,entry[1])
+		local size = sizes[ftype] * (count and count or 1)
 		offset = offset + size
 	end
 end
@@ -107,6 +115,8 @@ print_flist(ls_subframeIn)
 print_flist(ls_palet)
 print_flist(ls_bitmap)
 print_flist(ls_ngi_header)
+print_flist(ls_ngm_header)
+print_flist(ls_ngm_map)
 
 end
 

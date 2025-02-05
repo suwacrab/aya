@@ -118,13 +118,26 @@ NGM files (WIP.)
 
 ```
 *	header section
-*	map section
+	0x00 | char[4]  | header ("NGM\0")
+	0x04 | int      | format
+	0x08 | short[2] | bitmap dimensions (X,Y)
+	0x0C | short    | sub-image count
+	0x0E | short    | size of each sub-image
+	0x10 | int      | palette section offset
+	0x14 | int      | map section offset
+	0x18 | int      | bitmap section offset
 *	palette section
 	0x00 | char[4]  | header ("PAL\0")
 	0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
 	*	then, only if the file has a palette, the following:
 		0x08 | int      | palette size (compressed)
 		0x0C | short[]  | palette data (zlib-compressed)
+*	map section
+	0x00 | char[4]  | header ("CHP\0")
+	0x04 | short[2] | map dimensions (X,Y)
+	0x08 | int      | map data size (uncompressed)
+	0x0C | int      | map data size (compressed)
+	0x10 | char[]   | map data size (zlib-compressed)
 *	bitmap section
 	0x00 | char[4]  | header ("CEL\0")
 	0x04 | int      | bitmap size (uncompressed)

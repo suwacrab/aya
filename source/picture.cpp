@@ -248,6 +248,57 @@ namespace aya {
 		return true;
 	}
 
+	auto CPhoto::hash_get(int flip) const -> uint64_t {
+		uint64_t hash = 0x811C9DC5;
+		
+		int flip_x = (flip>>0)&1;
+		int flip_y = (flip>>1)&1;
+
+		int start_x = (flip_x ? width() - 1 : 0);
+		int start_y = (flip_y ? height() - 1 : 0);
+		int x_delta = (flip_x ? -1 : 1);
+		int y_delta = (flip_y ? -1 : 1);
+
+		int x = start_x;
+		int y = start_y;
+
+		for(int ly = 0; ly < height(); ly++) {
+			x = start_x;
+			for(int lx=0; lx < width(); lx++) {
+				uint64_t dot = dot_getRawC(x,y).rawdata();
+				hash = ((hash ^ dot) * 0x1000193) & 0xFFFFFFFFFFFFFFFF;
+				x += x_delta;
+			}
+			y += y_delta;
+		}
+		return hash;
+	}
+	auto CPhoto::hash_getIndexed(int flip) const -> uint64_t {
+		uint64_t hash = 0x811C9DC5;
+		
+		int flip_x = (flip>>0)&1;
+		int flip_y = (flip>>1)&1;
+
+		int start_x = (flip_x ? width() - 1 : 0);
+		int start_y = (flip_y ? height() - 1 : 0);
+		int x_delta = (flip_x ? -1 : 1);
+		int y_delta = (flip_y ? -1 : 1);
+
+		int x = start_x;
+		int y = start_y;
+
+		for(int ly = 0; ly < height(); ly++) {
+			x = start_x;
+			for(int lx=0; lx < width(); lx++) {
+				uint64_t dot = dot_getRawC(x,y).a;
+				hash = ((hash ^ dot) * 0x1000193) & 0xFFFFFFFFFFFFFFFF;
+				x += x_delta;
+			}
+			y += y_delta;
+		}
+		return hash;
+	}
+
 	auto CPhoto::convert_rawPGI(int format) const -> Blob {
 		auto format_id = patchu_graphfmt::getID(format);
 		Blob blob_bmp;
