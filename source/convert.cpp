@@ -775,6 +775,22 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		std::exit(-1);
 	}
 
+	// since character numbers are always in sizes of $20,
+	// regardless of whether VDP2's bpp, the boundary of
+	// each tile must be set.
+	const int pad_size = 0x800;
+	int subimage_count = 0;
+	size_t subimage_datasize = 0;
+	size_t subimage_boundary = 0;
+	if(aya::narumi_graphfmt::getBPP(format) == 4) {
+		subimage_boundary = 1;
+	} else if(aya::narumi_graphfmt::getBPP(format) == 8) {
+		subimage_boundary = 2;
+	} else {
+		std::puts("aya::CPhoto::convert_fileNGM(): error: unsupported pixel format.");
+		std::exit(-1);	
+	}
+
 	// setup bitmap info --------------------------------@/
 	Blob out_blob;
 	Blob blob_headersection;
@@ -783,10 +799,6 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	Blob blob_mapsection_real;
 	Blob blob_bmpsection;
 	Blob blob_bmpsection_real;
-
-	const int pad_size = 0x800;
-	int subimage_count = 0;
-	size_t subimage_datasize = 0;
 
 	// write section headers ----------------------------@/
 	// bmp & map section's header is written later, though!
@@ -799,11 +811,10 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		std::map<uint64_t,size_t> imghash_mapRealIdx;
 		size_t num_processedCel = 0;
 
+		int num_flips = 4;
+		if(info.is_12bit) num_flips = 1;
+
 		for(auto srcpic : imagetable) {
-			if(subimage_count > max_numtiles) {
-				std::puts("aya::CPhoto::convert_fileNGM(): error: cel count over!");
-				std::exit(-1);
-			}
 			const std::array<uint64_t,4> image_hashes = {
 				srcpic->hash_getIndexed(0b00),
 				srcpic->hash_getIndexed(0b01),
@@ -815,7 +826,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 			int tile_index = 0;
 			int flip_index = 0;
 
-			for(int fi=0; fi<4; fi++) {
+			for(int fi=0; fi<num_flips; fi++) {
 				const uint64_t hash = image_hashes[fi];
 				if(imghash_map.count(hash) > 0) {
 					flip_index = fi;
@@ -848,11 +859,20 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 			if(found_used) {
 				blob_mapsection.write_be_u16(tile_index | (flip_index<<10));
 			} else {
-				imghash_map[image_hashes[0]] = subimage_count;
+				int index = subimage_count * subimage_boundary;
+
+				if(index > max_numtiles) {
+					std::printf("aya::CPhoto::convert_fileNGM(): error: cel count over! (cel count: >=%3d\n",
+						index
+					);
+					std::exit(-1);
+				}
+
+				imghash_map[image_hashes[0]] = index;
 				imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
 				auto bmpblob = srcpic->convert_rawNGI(format);
 				blob_bmpsection.write_blob(bmpblob);
-				blob_mapsection.write_be_u16(subimage_count);
+				blob_mapsection.write_be_u16(index);
 				subimage_datasize = bmpblob.size();
 				subimage_count++;
 			}
@@ -885,7 +905,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	}
 
 	blob_mapsection_real.write_str("CHP"); {
-		Blob mapblobComp = aya::compress(blob_mapsection,do_compress);
+		Blob mapblobComp = aya::compress(blob_mapsection,false);
 		blob_mapsection_real.write_be_u32(blob_mapsection.size());
 		blob_mapsection_real.write_be_u32(mapblobComp.size());
 		blob_mapsection_real.write_blob(mapblobComp);

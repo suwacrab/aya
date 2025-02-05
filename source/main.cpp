@@ -41,6 +41,8 @@ int main(int argc,const char* argv[]) {
 	int param_ngi_subimageX = 0;
 	int param_ngi_subimageY = 0;
 
+	bool param_ngm_12bit = false;
+
 	int pixelfmt_flags = 0xFF;
 
 	std::string param_exportpal_filename;
@@ -96,6 +98,11 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-ngi_subimage",2)) {
 		param_ngi_subimageX = std::stoi(argparser.arg_get("-ngi_subimage",2).at(1));
 		param_ngi_subimageY = std::stoi(argparser.arg_get("-ngi_subimage",2).at(2));
+	}
+
+	// NGM-specific
+	if(argparser.arg_isValid("-ngm_12bit")) {
+		param_ngm_12bit = true;
 	}
 
 	if(do_showusage) {
@@ -280,7 +287,7 @@ int main(int argc,const char* argv[]) {
 		auto info = (aya::CNarumiNGMConvertInfo){
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
-			.is_12bit = false,
+			.is_12bit = param_ngm_12bit,
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGM(info);
@@ -324,6 +331,9 @@ static void disp_usage() {
 		"\t.NGI specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-ngi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
+		"\t.NGM specifics:\n"
+		"\t\tformats: i4,i8\n"
+		"\t\t-ngm_12bit              raises max number of map cels from 1024->4096 (if 4bpp), or 512->2048 (if 8bpp)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
 	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi, ngm\n");
