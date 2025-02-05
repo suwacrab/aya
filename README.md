@@ -152,7 +152,7 @@ NGM files contain graphics, palette, and a tilemap.
 *	header section
 	0x00 | char[4]  | header ("NGM\0")
 	0x04 | int      | format
-	0x08 | short[2] | bitmap dimensions (X,Y)
+	0x08 | short[2] | original bitmap dimensions, in dots (X,Y)
 	0x0C | short    | sub-image count
 	0x0E | short    | size of each sub-image
 	0x10 | int      | palette section offset

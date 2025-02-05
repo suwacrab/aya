@@ -891,7 +891,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		Blob palet_blob;
 		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
-			palet_get(p).write_rgb5a1_sat(palet_blob,true);
+			palet_get(p).write_rgb5a1_sat(palet_blob,false);
 		}
 		auto palet_blobComp = aya::compress(palet_blob,do_compress);
 		blob_paletsection.write_be_u32(palet_blob.size());
@@ -905,7 +905,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	blob_mapsection_real.write_str("CHP"); {
 		blob_mapsection_real.write_be_u16(map_width);
 		blob_mapsection_real.write_be_u16(map_height);
-		Blob mapblobComp = aya::compress(blob_mapsection,false);
+		Blob mapblobComp = aya::compress(blob_mapsection,do_compress);
 		blob_mapsection_real.write_be_u32(blob_mapsection.size());
 		blob_mapsection_real.write_be_u32(mapblobComp.size());
 		blob_mapsection_real.write_blob(mapblobComp);
