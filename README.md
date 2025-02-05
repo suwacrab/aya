@@ -62,6 +62,12 @@ options are set to the defaults (That is, no `Trim Sprite`). Also, in the
 
 Expect all the formats' specifications to be changing rapidly.
 
+The `format` field for the following structures is defined as such:
+
+-	`0`: I4 / 16-color graphics
+-	`1`: I8 / 256-color graphics
+-	`2`: rgb / 32,768-color graphics
+
 ### Saturn
 ---
 
@@ -140,7 +146,7 @@ image atlases, etc.)
 	0x0C | char[]   | bitmap data (zlib-compressed)
 ```
 
-NGM files (WIP.)
+NGM files contain graphics, palette, and a tilemap.
 
 ```
 *	header section
