@@ -796,7 +796,8 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	// write frames -------------------------------------@/
 	auto imagetable = rect_split(8,8); {
 		std::map<uint64_t,size_t> imghash_map;
-	//	size_t num_processedCel = 0;
+		std::map<uint64_t,size_t> imghash_mapRealIdx;
+		size_t num_processedCel = 0;
 
 		for(auto srcpic : imagetable) {
 			if(subimage_count > max_numtiles) {
@@ -815,27 +816,30 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 			int flip_index = 0;
 
 			for(int fi=0; fi<4; fi++) {
-				if(imghash_map.count(image_hashes[fi]) > 0) {
+				const uint64_t hash = image_hashes[fi];
+				if(imghash_map.count(hash) > 0) {
 					flip_index = fi;
-					tile_index = imghash_map[image_hashes[fi]];
+					tile_index = imghash_map[hash];
 					found_used = true;
 					
-					/*
-					auto get_tileXY = [=](int idx, int &x, int &y) {
-						x = 8 * (idx % (width()/8));
-						y = 8 * (idx / (width()/8));
-					};
-					
-					int src_x,src_y;
-					int cel_x,cel_y;
-					get_tileXY(num_processedCel,src_x,src_y);
-					get_tileXY(tile_index,cel_x,cel_y);
-					if(fi == 0) {
-						// printf("tile hit! (%3d,%3d) == tile %3d\n",src_x,src_y,tile_index);
-					} else {
-						printf("flip hit! (%3d,%3d) == tile %3d (%3d,%3d) [fi=%d]\n",src_x,src_y,tile_index,cel_x,cel_y,fi);
+					if(info.verbose) {
+						auto get_tileXY = [=](int idx, int &x, int &y) {
+							x = 8 * (idx % (width()/8));
+							y = 8 * (idx / (width()/8));
+						};
+						
+						int orig_index = imghash_mapRealIdx[hash];
+						int src_x,src_y;
+						int cel_x,cel_y;
+						get_tileXY(num_processedCel,src_x,src_y);
+						get_tileXY(orig_index,cel_x,cel_y);
+						if(fi == 0) {
+							// printf("tile hit! (%3d,%3d) == tile %3d\n",src_x,src_y,tile_index);
+						} else {
+							printf("flip hit! (%3d,%3d) == tile %3d (%3d,%3d) [fi=%d]\n",src_x,src_y,orig_index,cel_x,cel_y,fi);
+						}
 					}
-					*/
+					
 					break;
 				}
 			}
@@ -845,6 +849,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 				blob_mapsection.write_be_u16(tile_index | (flip_index<<10));
 			} else {
 				imghash_map[image_hashes[0]] = subimage_count;
+				imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
 				auto bmpblob = srcpic->convert_rawNGI(format);
 				blob_bmpsection.write_blob(bmpblob);
 				blob_mapsection.write_be_u16(subimage_count);
@@ -852,7 +857,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 				subimage_count++;
 			}
 
-		//	num_processedCel++;
+			num_processedCel++;
 		}
 	}
 
