@@ -791,6 +791,9 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 		std::exit(-1);	
 	}
 
+	const int map_width = width() / 8;
+	const int map_height = height() / 8;
+
 	// setup bitmap info --------------------------------@/
 	Blob out_blob;
 	Blob blob_headersection;
@@ -897,18 +900,20 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	}
 
 	// fix up sections ----------------------------------@/
+	blob_mapsection_real.write_str("CHP"); {
+		blob_mapsection_real.write_be_u16(map_width);
+		blob_mapsection_real.write_be_u16(map_height);
+		Blob mapblobComp = aya::compress(blob_mapsection,false);
+		blob_mapsection_real.write_be_u32(blob_mapsection.size());
+		blob_mapsection_real.write_be_u32(mapblobComp.size());
+		blob_mapsection_real.write_blob(mapblobComp);
+	}
+
 	blob_bmpsection_real.write_str("CEL"); {
 		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
 		blob_bmpsection_real.write_blob(bmpblobComp);
-	}
-
-	blob_mapsection_real.write_str("CHP"); {
-		Blob mapblobComp = aya::compress(blob_mapsection,false);
-		blob_mapsection_real.write_be_u32(blob_mapsection.size());
-		blob_mapsection_real.write_be_u32(mapblobComp.size());
-		blob_mapsection_real.write_blob(mapblobComp);
 	}
 
 	// create header ------------------------------------@/

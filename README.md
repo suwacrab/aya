@@ -38,7 +38,7 @@ Example: converting a 4bpp aseprite JSON+.PNG to a .NGA file:
 aya -p -fmt nga i4 -i animation.png -o animation.nga -nga_json animation.json
 ```
 
-`-p` must be specified if the source image has a palette.
+`-p` **must** be specified if the source image has a palette.
 
 ### Usage notes: .NGA
 ---
