@@ -27,8 +27,34 @@ make clean && make all
 ---
 
 ```
-aya -i <source image> 
+aya -i <source image> -o <output file> <options>
 ```
+
+Use `aya` on it's own to view all the available options.
+
+Example: converting a 4bpp aseprite JSON+.PNG to a .NGA file:
+
+```
+aya -p -fmt nga i4 -i animation.png -o animation.nga -nga_json animation.json
+```
+
+`-p` must be specified if the source image has a palette.
+
+### Usage notes: .NGA
+---
+
+Each animation frame is divided into multiple subimages (though, as of now,
+each frame only has one subimage.)
+
+Each subimage has an X/Y coordinate that's used from offsetting them from the
+animation's origin. This is useful if you want to hardcode an image's center
+without having to alter your code.
+
+Setting said offset is done via the `nga_useroffset` option.
+
+Also, when it comes to exporting aseprite's .JSON files, make sure all the border
+options are set to the defaults (That is, no `Trim Sprite`). Also, in the
+`Output` options, make sure the data exports as `Array` instead of `Hash`.
 
 ---
 # Format specification

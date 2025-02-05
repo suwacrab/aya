@@ -313,7 +313,7 @@ static void disp_usage() {
 		"\t--help            show this dialog\n"
 		"\t-o <output_file>  specify output filename\n"
 		"\t-i <source_file>  specify source filename\n"
-		"\t-fmt <fmt> <type> specify output's pixel format & filetype\n"
+		"\t-fmt <type> <fmt> specify output's pixel format & filetype\n"
 		"\t-nc               don't use gz compression\n"
 		"\t-p                use palette\n"
 		"\t-v                verbose flag\n"
