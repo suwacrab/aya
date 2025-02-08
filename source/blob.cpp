@@ -63,9 +63,9 @@ void Blob::write_str(const std::string& str, bool no_terminator) {
 		write_u8(0);
 	}
 }
-void Blob::pad(int divisor) {
+void Blob::pad(int divisor, int padbyte) {
 	while((size()%divisor) != 0) {
-		write_u8(0xAB);
+		write_u8(padbyte);
 	}
 }
 

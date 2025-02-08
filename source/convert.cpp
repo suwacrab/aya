@@ -563,6 +563,7 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 			blob_subframesection.write_be_u32(blob_bmpsection.size()/8);
 			
 			auto bmpblob = subframe_photo.convert_rawNGI(format);
+			bmpblob.pad(8,0x00); // pad to next 8 bytes with 0
 			blob_bmpsection.write_blob(bmpblob);
 			
 			blob_subframesection.write_be_u32(bmpblob.size()/8);

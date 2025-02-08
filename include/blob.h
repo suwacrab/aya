@@ -18,7 +18,7 @@ class Blob {
 		void write_be_u32(uint32_t n);
 
 		void write_str(const std::string& str, bool no_terminator=false);
-		void pad(int divisor);
+		void pad(int divisor, int padbyte = 0xAB);
 
 		void reset();
 		bool send_file(std::string filename);
