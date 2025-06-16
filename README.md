@@ -62,13 +62,16 @@ options are set to the defaults (That is, no `Trim Sprite`). Also, in the
 
 Expect all the formats' specifications to be changing rapidly.
 
+### Saturn Pixel Formats
+---
+
 The `format` field for the following structures is defined as such:
 
 -	`0`: I4 / 16-color graphics
 -	`1`: I8 / 256-color graphics
 -	`2`: rgb / 32,768-color graphics
 
-### Saturn
+### Saturn Image Formats
 ---
 
 NGA files are used for storing 2D animations. They store the graphics for each
