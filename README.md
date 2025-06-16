@@ -71,13 +71,20 @@ The `format` field for the following structures is defined as such:
 ### Saturn
 ---
 
-NGA files are used for storing 2D animations, with each frame being stored
-sequentially one frame after the other. Each frame is also divided into
-subframes, for animations that use multiple layers/parts (WIP, animations only
-have 1 subframe per frame, for now.)
+NGA files are used for storing 2D animations. They store the graphics for each
+frame, along with their frame durations.
 
-NGA files are created by supplying a .json file (exported from aseprite), along
-with a source image.
+As it's very common for animations to consist of multiple sprites (e.g a
+character and the sword they carry), each animation frame actually consists of
+one *or more* subframes. Each subframe carries an X and Y coordinate of where
+it should be drawn, relative to the coordinate (0,0).
+
+NGA files can be created by supplying a .json file (exported from aseprite),
+along with a source image. Animations converted via aseprite only have one
+subframe per frame, as aseprite does not support frames with multiple images.
+
+In the future, however, support for EDGE2 conversion is planned, as it supports
+multiple images per frame, allowing full use of subframes.
 
 ```
 *	header section
