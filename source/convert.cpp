@@ -960,7 +960,6 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const std::string filename_json = info.filename_json;
-	const bool do_compress = info.do_compress;
 
 	const int useroffset_x = info.useroffset_x;
 	const int useroffset_y = info.useroffset_y;
@@ -1049,25 +1048,22 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	size_t offset_paletsection = offset_subframesection + blob_subframesection.size();
 	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
 
-	aya::ALICE_AGAFILE_HEADER header = {
-		.width = 
-	};
-
-	blob_headersection.write_be_u32(format);
-	blob_headersection.write_be_u16(num_frames);
-	blob_headersection.write_be_u16(subframe_index);
-
-	blob_headersection.write_be_u32(offset_framesection);
-	blob_headersection.write_be_u32(offset_subframesection);
-	blob_headersection.write_be_u32(offset_paletsection);
-	blob_headersection.write_be_u32(offset_bmpsection);
-	blob_headersection.pad(pad_size);
+	aya::ALICE_AGAFILE_HEADER header = {};
+	header.width = width();
+	header.height = height();
+	header.palet_size = blob_paletsection.size();
+	header.frame_count = num_frames;
+	header.bitmap_size = blob_bmpsection.size();
+	header.offset_framesection = offset_framesection;
+	header.offset_subframesection = offset_subframesection;
+	header.offset_paletsection = offset_paletsection;
+	header.offset_bmpsection = offset_bmpsection;
 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);
 	out_blob.write_blob(blob_subframesection);
 	out_blob.write_blob(blob_paletsection);
-	out_blob.write_blob(blob_bmpsection_real);
+	out_blob.write_blob(blob_bmpsection);
 	return out_blob;
 }
 

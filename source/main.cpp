@@ -43,6 +43,10 @@ int main(int argc,const char* argv[]) {
 
 	bool param_ngm_12bit = false;
 
+	std::string param_aga_json;
+	int param_aga_useroffsetX = 0;
+	int param_aga_useroffsetY = 0;
+
 	int pixelfmt_flags = 0xFF;
 
 	std::string param_exportpal_filename;
@@ -103,6 +107,15 @@ int main(int argc,const char* argv[]) {
 	// NGM-specific
 	if(argparser.arg_isValid("-ngm_12bit")) {
 		param_ngm_12bit = true;
+	}
+
+	// AGA-specific
+	if(argparser.arg_isValid("-aga_json",1)) {
+		param_aga_json = argparser.arg_get("-aga_json",1).at(1);
+	}
+	if(argparser.arg_isValid("-aga_useroffset",2)) {
+		param_aga_useroffsetX = std::stoi(argparser.arg_get("-aga_useroffset",2).at(1));
+		param_aga_useroffsetY = std::stoi(argparser.arg_get("-aga_useroffset",2).at(2));
 	}
 
 	if(do_showusage) {
@@ -365,6 +378,10 @@ static void disp_usage() {
 		"\t.NGM specifics:\n"
 		"\t\tformats: i4,i8\n"
 		"\t\t-ngm_12bit              raises max number of map cels from 1024->4096 (if 4bpp), or 512->2048 (if 8bpp)\n"
+		"\t.AGA specifics:\n"
+		"\t\tformats: i4,i8,rgb\n"
+		"\t\t-aga_json <json>        specifies aseprite spritesheet .json to use\n"
+		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
 	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi, ngm\n");

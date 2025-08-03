@@ -21,6 +21,8 @@ namespace aya {
 	struct PATCHU_PGAFILE_TILE;
 
 	struct ALICE_AGAFILE_HEADER;
+	struct ALICE_AGAFILE_FRAME;
+	struct ALICE_AGAFILE_SUBFRAME;
 
 	namespace patchu_graphfmt {
 		enum {
@@ -168,11 +170,10 @@ struct aya::PATCHU_PGAFILE_TILE {
 };
 struct aya::ALICE_AGAFILE_HEADER {
 	char magic[4];
-	uint16_t width,height;
+	int16_t width,height;
 	uint32_t format_flags;
-	uint32_t palette_size;
-	uint32_t frame_count;
-	uint32_t palet_size;
+	uint16_t palet_size;
+	uint16_t frame_count;
 	uint32_t bitmap_size;
 	uint32_t offset_framesection;
 	uint32_t offset_subframesection;
