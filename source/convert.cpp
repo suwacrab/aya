@@ -941,7 +941,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	blob_headersection.write_be_u32(format);
 
 	blob_headersection.write_be_u16(width());
-	blob_headersection.write_be_u16(width());
+	blob_headersection.write_be_u16(height());
 	blob_headersection.write_be_u16(subimage_count);
 	blob_headersection.write_be_u16(subimage_datasize);
 	blob_headersection.write_be_u32(offset_paletsection);
@@ -954,6 +954,120 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	out_blob.write_blob(blob_mapsection_real);
 	out_blob.write_blob(blob_bmpsection_real);
 
+	return out_blob;
+}
+auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob {
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+	const std::string filename_json = info.filename_json;
+	const bool do_compress = info.do_compress;
+
+	const int useroffset_x = info.useroffset_x;
+	const int useroffset_y = info.useroffset_y;
+
+	// setup frame list ---------------------------------@/
+	Blob out_blob;
+	Blob blob_headersection;
+	Blob blob_framesection;
+	Blob blob_subframesection;
+	Blob blob_paletsection;
+	Blob blob_bmpsection;
+
+	aya::CWorkingFrameList framelist;
+	framelist.create_fromAseJSON(*this,filename_json);
+
+	const int num_frames = framelist.frame_count();
+
+	// write frames -------------------------------------@/
+	size_t subframe_index = 0;
+	for(int f=0; f<num_frames; f++) {
+		auto& wrkframe = framelist.frame_get(f);
+		// write regular frame --------------------------@/
+		blob_framesection.write_be_u16(wrkframe.subframe_count());
+		blob_framesection.write_be_u16(wrkframe.m_durationFrame);
+		blob_framesection.write_be_u32(subframe_index);
+		
+		// write each subframe --------------------------@/
+		for(int sf=0; sf<wrkframe.subframe_count(); sf++) {
+			auto subframe = wrkframe.subframe_get(sf);
+			auto& subframe_photoOrig = subframe.photo();
+			int rounded_width = std::ceil((float)(subframe_photoOrig.width())/8.0)*8;
+
+			// get bitmap data --------------------------@/
+			CPhoto subframe_photo(
+				rounded_width,
+				subframe_photoOrig.height()
+			);
+			// copy to slightly-bigger photo
+			subframe_photoOrig.rect_blit(subframe_photo,0,0,0,0); 
+
+			// write subframe data ----------------------@/
+			const int palette_num = 0; // only 1 palette, for now...
+			blob_subframesection.write_be_u32(blob_bmpsection.size()/8);
+			
+			auto bmpblob = subframe_photo.convert_rawNGI(format);
+			bmpblob.pad(8,0x00); // pad to next 8 bytes with 0
+			blob_bmpsection.write_blob(bmpblob);
+			
+			blob_subframesection.write_be_u32(bmpblob.size()/8);
+			blob_subframesection.write_be_u32(palette_num);
+			blob_subframesection.write_be_u16(format);
+			blob_subframesection.write_be_u16(rounded_width);
+			blob_subframesection.write_be_u16(subframe_photoOrig.width());
+			blob_subframesection.write_be_u16(subframe_photo.height());
+			blob_subframesection.write_be_u16(subframe.m_posX - useroffset_x);
+			blob_subframesection.write_be_u16(subframe.m_posY - useroffset_y);
+
+			if(info.verbose) {
+				printf("subframe[%d][%d]: (%4d,%4d (x2=%d))\n",
+					f,sf,
+					subframe_photoOrig.width(),
+					subframe_photo.height(),
+					rounded_width
+				);
+			}
+			subframe_index++;
+			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",
+				f,sf,bmpblob.size()
+			);*/
+		}
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::alice_graphfmt::getBPP(format) <= 8) {
+		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
+		for(int p=0; p<color_count; p++) {
+			palet_get(p).write_rgb5a1_agb(blob_paletsection);
+		}
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// create header ------------------------------------@/
+	size_t offset_framesection = sizeof(ALICE_AGAFILE_HEADER);
+	size_t offset_subframesection = offset_framesection + blob_framesection.size();
+	size_t offset_paletsection = offset_subframesection + blob_subframesection.size();
+	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
+
+	aya::ALICE_AGAFILE_HEADER header = {
+		.width = 
+	};
+
+	blob_headersection.write_be_u32(format);
+	blob_headersection.write_be_u16(num_frames);
+	blob_headersection.write_be_u16(subframe_index);
+
+	blob_headersection.write_be_u32(offset_framesection);
+	blob_headersection.write_be_u32(offset_subframesection);
+	blob_headersection.write_be_u32(offset_paletsection);
+	blob_headersection.write_be_u32(offset_bmpsection);
+	blob_headersection.pad(pad_size);
+
+	out_blob.write_blob(blob_headersection);
+	out_blob.write_blob(blob_framesection);
+	out_blob.write_blob(blob_subframesection);
+	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_bmpsection_real);
 	return out_blob;
 }
 

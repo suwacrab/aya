@@ -165,6 +165,11 @@ int main(int argc,const char* argv[]) {
 		{"i8",aya::narumi_graphfmt::i8},
 		{"rgb",aya::narumi_graphfmt::rgb},
 	};
+	static const std::map<std::string,int> pixelformat_table_alice = {
+		{"i4",aya::alice_graphfmt::i4},
+		{"i8",aya::alice_graphfmt::i8},
+		{"rgb",aya::alice_graphfmt::rgb},
+	};
 
 	if(param_filetype == "mgi") {
 		/* get format -----------------------------------*/
@@ -291,6 +296,32 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGM(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
+	else if(param_filetype == "aga") {
+		/* get format -----------------------------------*/
+		if(pixelformat_table_alice.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table_alice.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CAliceAGAConvertInfo){
+			.filename_json = param_aga_json,
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.useroffset_x = param_aga_useroffsetX,
+			.useroffset_y = param_aga_useroffsetY,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileAGA(info);
 		if(!pic_blob.send_file(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);

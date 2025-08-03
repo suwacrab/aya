@@ -186,3 +186,57 @@ NGM files contain graphics, palette, and a tilemap.
 	0x08 | int      | bitmap size (compressed)
 	0x0C | char[]   | bitmap data (zlib-compressed)
 ```
+
+### GBA Pixel Formats
+---
+
+The `format` field for the following structures is defined as such:
+
+-	`0`: I4 / 16-color graphics
+-	`1`: I8 / 256-color graphics
+-	`2`: rgb / 32,768-color graphics
+
+### GBA Image Formats
+---
+
+AGA files contain sprite animations. They're similar to NGA files.
+
+```
+*	header section
+	0x00 | char[4]  | header ("NGA\0")
+	0x04 | int      | format
+	0x08 | short    | frame count
+	0x0A | short    | frame section count
+	0x0C | int      | frame section offset
+	0x10 | int      | subframe section offset
+	0x14 | int      | palette section offset
+	0x18 | int      | bitmap section offset
+*	frame section
+	0x00 | char[4]  | header ("FR1\0")
+	*	then, for each frame, it's the following:
+		0x00 | short    | number of subframes frame has
+		0x02 | short    | time duration (in frames) this frame will display for
+		0x04 | int      | index of first subframe, in subframe section	
+*	subframe section
+	0x00 | char[4]  | header ("FR2\0")
+	*	then, for each subframe, it's the following:
+		0x00 | int      | bmp offset (divided by 8)
+		0x04 | int      | bmp size (divided by 8)
+		0x08 | int      | palette number
+		0x0C | short    | format
+		0x0E | short    | bitmap width (rounded up to nearest 8 dots)
+		0x10 | short[2] | bitmap dimensions (X,Y)
+		0x14 | short[2] | X,Y offset when drawing
+*	palette section
+	0x00 | char[4]  | header ("PAL\0")
+	0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
+	*	then, only if the file has a palette, the following:
+		0x08 | int      | palette size (compressed)
+		0x0C | short[]  | palette data (zlib-compressed)
+*	bitmap section
+	0x00 | char[4]  | header ("CEL\0")
+	0x04 | int      | bitmap size (uncompressed)
+	0x08 | int      | bitmap size (compressed)
+	0x0C | char[]   | bitmap data (zlib-compressed)
+```
+

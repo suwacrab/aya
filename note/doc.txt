@@ -50,3 +50,50 @@ MGI file format:
 		* bitmap size in bytes can be calculated via
 		  (width_real * height_real * bpp) / 8.
 
+alice:
+	-	Header
+		-	Contains image width & height.
+		-	Offsets to frame, subframe, palette, and bitmap sections.
+	-	Frames
+		-	Each frame consists of multiple subframes. Each subframe is a
+			hardware sprite.
+		-	Frames should have 4 different pointers to subframes, for each
+			possible mirroring orientation.
+	-	Subframes
+		-	Each of these has an X and a Y coordinate, offsetted by whatever
+			the user chooses.
+		-	These also contain the tile numbers for each object.
+	-	Palette
+		-	..isn't it obvious?
+	-	Bitmap
+		-	Compression can be added later.
+	*	Generally, a cut-down version of NGA. Multiple objects per sprite is
+		handled by just appending those as additional subframes.
+	*	It should utilize a new algorithm to be able to "compress" frames via
+		flipping.
+		First, the previous algorithm is ran like normal. By that, I mean the
+		image is split into 8x8 areas, and each area is converted into a
+		workobj. Then, we create a workobj list.
+		Then, until no more potential mirrors can be found:
+		-	Go through each workobj in the workobj list. If it can be mirrored
+			in a specific orientation, then remove that workobj from the list.
+			Afterwards, add a new workobj that's half of that workobj, then a
+			copy of said workobj, flipped.
+		After all possible mirrors are done, check if any workobjs are mirrored
+		duplicates of any others. If so, mark them, and they won't be added to
+		the final bitmap data.
+
+		Simulation with the sphere:
+		-	Sphere would be split into two identical parts.
+		-	The second part is marked as a dupe of the first.
+		-	Identical part 1 would be further split into two identical parts.
+		-	Identical part 2 would be further split into two identical parts.
+		-	No further mirrors can be found, stop searching for mirrors.
+		-	Workobjs 1, 2, and 3 are mirrors of 0, so mark them as such.
+		-	Write file data.
+
+Possible AGB Sprite Sizes:
+	8x8		16x8	32x8	___
+	8x16	16x16	32x16	___
+	8x32	16x32	32x32	64x32
+	___		___		32x64	64x64

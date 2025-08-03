@@ -1,5 +1,4 @@
-#ifndef IMGCONV_H
-#define IMGCONV_H
+#pragma once
 
 #include <blob.h>
 #include <string>
@@ -20,6 +19,8 @@ namespace aya {
 	struct PATCHU_PGAFILE_HEADER;
 	struct PATCHU_PGAFILE_FRAME;
 	struct PATCHU_PGAFILE_TILE;
+
+	struct ALICE_AGAFILE_HEADER;
 
 	namespace patchu_graphfmt {
 		enum {
@@ -69,6 +70,15 @@ namespace aya {
 			return (id >= 0) && (id < len);
 		}
 	};
+	namespace alice_graphfmt {
+		enum { i4,i8,rgb,len };
+		auto getBPP(int format) -> int;
+		constexpr auto getID(int format) -> int { return format & 0xFF; }
+		constexpr auto isValid(int format) -> bool {
+			auto id = getID(format);
+			return (id >= 0) && (id < len);
+		}
+	};
 
 	struct CNarumiNGAConvertInfo {
 		std::string filename_json;
@@ -88,6 +98,14 @@ namespace aya {
 		bool do_compress;
 		int format;
 		int is_12bit;
+		bool verbose;
+	};
+	struct CAliceAGAConvertInfo {
+		std::string filename_json;
+		bool do_compress;
+		int format;
+
+		int useroffset_x,useroffset_y;
 		bool verbose;
 	};
 
@@ -148,6 +166,35 @@ struct aya::PATCHU_PGAFILE_TILE {
 	uint16_t disp_x,disp_y;
 	uint32_t tile_sizex;
 };
+struct aya::ALICE_AGAFILE_HEADER {
+	char magic[4];
+	uint16_t width,height;
+	uint32_t format_flags;
+	uint32_t palette_size;
+	uint32_t frame_count;
+	uint32_t palet_size;
+	uint32_t bitmap_size;
+	uint32_t offset_framesection;
+	uint32_t offset_subframesection;
+	uint32_t offset_paletsection;
+	uint32_t offset_bmpsection;
+};
+struct aya::ALICE_AGAFILE_FRAME {
+	uint16_t size_bmp;
+	uint32_t offset_bmp;
+	uint16_t offset_subframe[4];
+	uint16_t duration_f;
+};
+struct aya::ALICE_AGAFILE_SUBFRAME {
+	int16_t pos_x;
+	int16_t pos_y;
+	uint16_t tilenum;
+	uint16_t size_bmp;
+	uint32_t offset_tile;
+	uint32_t offset_bmp;
+	uint32_t duration_f;
+	uint32_t duration_ms;
+};
 
 struct aya::CColor {
 	uint8_t a,r,g,b;
@@ -156,6 +203,7 @@ struct aya::CColor {
 	void write_rgb565(Blob& out_blob) const;
 	void write_rgb5a1(Blob& out_blob,int test = 254) const;
 	void write_rgb5a1_sat(Blob& out_blob,bool msb) const;
+	void write_rgb5a1_agb(Blob& out_blob,bool msb = false) const;
 	void write_argb4(Blob& out_blob) const;
 
 	constexpr auto rawdata() const -> uint32_t {
@@ -217,6 +265,7 @@ class aya::CPhoto {
 		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
 		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
 		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> Blob;
+		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;
@@ -264,6 +313,4 @@ class aya::CWorkingFrameList {
 		CWorkingFrameList();
 		~CWorkingFrameList() {}
 };
-
-#endif
 

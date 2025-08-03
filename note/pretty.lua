@@ -75,6 +75,18 @@ local ls_ngm_map = {
 	{ 'map data size (zlib-compressed)', 'char',0 };
 }
 
+local ls_aga_header = {
+	{ 'header ("AGA\\0")','char',4 };
+	{ 'format','short' };
+	{ 'palette size','short' };
+	{ 'frame count','short' };
+	{ 'frame section count','short' };
+	{ 'frame section offset','int' };
+	{ 'subframe section offset','int' };
+	{ 'palette section offset','int' };
+	{ 'bitmap section offset','int' };
+}
+
 local printf = function(str,...) print(str:format(...)) end
 
 local function print_flist(fl)
@@ -107,7 +119,7 @@ local function print_flist(fl)
 	end
 end
 
-print_flist(ls_header)
+--[[print_flist(ls_header)
 print_flist(ls_frame)
 print_flist(ls_frameIn)
 print_flist(ls_subframe)
@@ -116,7 +128,8 @@ print_flist(ls_palet)
 print_flist(ls_bitmap)
 print_flist(ls_ngi_header)
 print_flist(ls_ngm_header)
-print_flist(ls_ngm_map)
+print_flist(ls_ngm_map)]]
+print_flist(ls_aga_header)
 
 end
 
