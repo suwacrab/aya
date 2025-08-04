@@ -440,6 +440,47 @@ namespace aya {
 
 		return blob_bmp;
 	}
+	auto CPhoto::convert_rawAGI(int format) const -> Blob {
+		auto format_id = alice_graphfmt::getID(format);
+		Blob blob_bmp;
+
+		switch(format_id) {
+			case alice_graphfmt::i4: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix += 2) {
+						auto dotA = dot_getRawC(ix,iy).a & 0xF;
+						auto dotB = dot_getRawC(ix+1,iy).a & 0xF;
+						
+						blob_bmp.write_u8(dotA | (dotB<<4));
+					}
+				}		
+				break;
+			}
+			case alice_graphfmt::i8: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix++) {
+						dot_getRawC(ix,iy).write_alpha(blob_bmp);
+					}
+				}		
+				break;
+			}
+			case alice_graphfmt::rgb: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix++) {
+						dot_getRawC(ix,iy).write_rgb5a1_agb(blob_bmp);
+					}
+				}
+				break;
+			}
+			default: {
+				puts("aya::CPhoto::convert_rawAGI(fmt): error: format not supported ^^;");
+				std::exit(-1);
+				break;
+			}
+		}
+
+		return blob_bmp;
+	}
 	auto CPhoto::convert_twiddled(int format) const -> Blob {
 		auto format_id = marisa_graphfmt::getID(format);
 		Blob blob_output;

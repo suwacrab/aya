@@ -384,7 +384,7 @@ static void disp_usage() {
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: mgi, pgi, pga, nga, ngi, ngm\n");
+	std::printf("\tavailable filetypes: aga, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 

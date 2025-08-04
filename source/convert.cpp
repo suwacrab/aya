@@ -982,54 +982,144 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	for(int f=0; f<num_frames; f++) {
 		auto& wrkframe = framelist.frame_get(f);
 		// write regular frame --------------------------@/
-		blob_framesection.write_be_u16(wrkframe.subframe_count());
-		blob_framesection.write_be_u16(wrkframe.m_durationFrame);
-		blob_framesection.write_be_u32(subframe_index);
-		
+		aya::ALICE_AGAFILE_FRAME fileframe = {};
+		fileframe.bmp_size = 0;
+		fileframe.bmp_offset = blob_bmpsection.size();
+		fileframe.duration_f = wrkframe.m_durationFrame;
+		fileframe.subframe_offset[0] = subframe_index;
+
 		// write each subframe --------------------------@/
 		for(int sf=0; sf<wrkframe.subframe_count(); sf++) {
 			auto subframe = wrkframe.subframe_get(sf);
-			auto& subframe_photoOrig = subframe.photo();
-			int rounded_width = std::ceil((float)(subframe_photoOrig.width())/8.0)*8;
+			auto subframe_photo = subframe.photo();
+			if(subframe_photo.width()%8 != 0 || subframe_photo.height()%8 != 0) {
+				std::puts("aya::CPhoto::convert_fileNGI(): error: subimage X size must be multiple of 8!!");
+				std::exit(-1);
+			}
 
-			// get bitmap data --------------------------@/
-			CPhoto subframe_photo(
-				rounded_width,
-				subframe_photoOrig.height()
-			);
-			// copy to slightly-bigger photo
-			subframe_photoOrig.rect_blit(subframe_photo,0,0,0,0); 
+			// setup tile grid --------------------------@/
+			auto subframe_tiles = subframe_photo.rect_split(8,8);
+			const int grid_width = subframe_photo.width()/8;
+			const int grid_height = subframe_photo.height()/8;
+			const int grid_area = grid_width * grid_height;
+			std::vector<bool> emptygrid;
+			std::vector<bool> usedgrid;
+			emptygrid.resize(grid_area,false);
+			usedgrid.resize(grid_area,false);
+
+			enum AGBShape {
+				AGBShape_Square,
+				AGBShape_Hori,
+				AGBShape_Vert
+			};
+			struct UsableSize { int x,y; };
+			const std::array<UsableSize,12> AGBSizes {{
+				{ 1,1 }, { 2,1 }, { 4,1 },
+				{ 1,2 }, { 2,2 }, { 4,2 },
+				{ 1,4 }, { 2,4 }, { 4,4 }, { 8,4 },
+				                  { 4,8 }, { 8,8 }
+			}};
+			const std::array<int,12> AGBShapes {
+				AGBShape_Square,	AGBShape_Hori,		AGBShape_Hori,
+				AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
+				AGBShape_Vert,		AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
+														AGBShape_Vert,		AGBShape_Square
+			};
+
+			for(int i=0; i<grid_area; i++) {
+				auto tile = subframe_tiles.at(i);
+				if(tile->all_equals(aya::CColor())) {
+					emptygrid.at(i) = true;
+				}
+			}
+
+			auto usedgrid_get = [&](int x, int y) {
+				return usedgrid.at(x + y * grid_width);
+			};
+			auto emptygrid_get = [&](int x, int y) {
+				return emptygrid.at(x + y * grid_width);
+			};
+			auto tilegrid_get = [&](int x, int y) {
+				return subframe_tiles.at(x + y * grid_width);
+			};
+
+			// get tiles --------------------------------@/
+			for(int iy=0; iy<grid_height; iy++) {
+				for(int ix=0; ix<grid_width; ix++) {
+					// check largest rectangle that can be used
+					int largest_area = 0;
+					size_t largest_areaIdx = 0;
+					for(int i=0; i<AGBSizes.size(); i++) {
+						const auto& size = AGBSizes.at(i);
+						int area = size.x * size.y;
+						if(largest_area > area) continue;
+						if(iy + size.y > grid_height) continue;
+						if(ix + size.x > grid_width) continue;
+						// break out if anything in range is used
+						const int lenient_count = 0;
+						int num_empty = 0;
+						bool area_usable = true;
+						for(int y=0; y<size.y; y++) {
+							for(int x=0; x<size.x; x++) {
+								if(usedgrid_get(x+ix,y+iy)) {
+									area_usable = false;
+									break;
+								}
+								if(emptygrid_get(x+ix,y+iy)) {
+									num_empty++;
+								}
+								if(lenient_count != -1 && num_empty > lenient_count) {
+									area_usable = false;
+									break;
+								}
+							}
+							if(!area_usable) break;
+						}
+						if(!area_usable) continue;
+						largest_area = area;
+						largest_areaIdx = i;
+					}
+
+					if(largest_area == 0) continue; // means no rect was found
+					const auto& sizeentry = AGBSizes.at(largest_areaIdx);
+					const int size_x = sizeentry.x;
+					const int size_y = sizeentry.y;
+					// write tile
+					for(int y=0; y<size_y; y++) {
+						for(int x=0; x<size_x; x++) {
+						// mark area as used
+							usedgrid_get(x+ix,y+iy) = true;
+							auto tile = tilegrid_get(x+ix,y+iy);
+							auto bmpblob = tile->convert_rawAGI(format);
+							fileframe.bmp_size += bmpblob.size();
+							blob_bmpsection.write_blob(bmpblob);
+						}
+					}
+
+					aya::ALICE_AGAFILE_SUBFRAME filesubframe = {};
+					filesubframe.pos_x -= useroffset_x;
+					filesubframe.pos_y -= useroffset_y;
+					filesubframe.sizeflip = AGBShapes.at(largest_areaIdx);
+
+					blob_subframesection.write_raw(&filesubframe,sizeof(filesubframe));
+					subframe_index++;
+				}
+			}
 
 			// write subframe data ----------------------@/
-			const int palette_num = 0; // only 1 palette, for now...
-			blob_subframesection.write_be_u32(blob_bmpsection.size()/8);
-			
-			auto bmpblob = subframe_photo.convert_rawNGI(format);
-			bmpblob.pad(8,0x00); // pad to next 8 bytes with 0
-			blob_bmpsection.write_blob(bmpblob);
-			
-			blob_subframesection.write_be_u32(bmpblob.size()/8);
-			blob_subframesection.write_be_u32(palette_num);
-			blob_subframesection.write_be_u16(format);
-			blob_subframesection.write_be_u16(rounded_width);
-			blob_subframesection.write_be_u16(subframe_photoOrig.width());
-			blob_subframesection.write_be_u16(subframe_photo.height());
-			blob_subframesection.write_be_u16(subframe.m_posX - useroffset_x);
-			blob_subframesection.write_be_u16(subframe.m_posY - useroffset_y);
-
 			if(info.verbose) {
-				printf("subframe[%d][%d]: (%4d,%4d (x2=%d))\n",
+				printf("subframe[%d][%d]: (%4d,%4d)\n",
 					f,sf,
-					subframe_photoOrig.width(),
-					subframe_photo.height(),
-					rounded_width
+					subframe_photo.width(),
+					subframe_photo.height()
 				);
 			}
-			subframe_index++;
 			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",
 				f,sf,bmpblob.size()
 			);*/
 		}
+	
+		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
 
 	// create palette -----------------------------------@/
@@ -1049,6 +1139,9 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
 
 	aya::ALICE_AGAFILE_HEADER header = {};
+	header.magic[0] = 'A';
+	header.magic[1] = 'G';
+	header.magic[2] = 'A';
 	header.width = width();
 	header.height = height();
 	header.palet_size = blob_paletsection.size();
@@ -1058,6 +1151,8 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	header.offset_subframesection = offset_subframesection;
 	header.offset_paletsection = offset_paletsection;
 	header.offset_bmpsection = offset_bmpsection;
+
+	blob_headersection.write_raw(&header,sizeof(header));
 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);

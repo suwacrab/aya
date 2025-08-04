@@ -181,15 +181,17 @@ struct aya::ALICE_AGAFILE_HEADER {
 	uint32_t offset_bmpsection;
 };
 struct aya::ALICE_AGAFILE_FRAME {
-	uint16_t size_bmp;
-	uint32_t offset_bmp;
-	uint16_t offset_subframe[4];
-	uint16_t duration_f;
+	uint16_t subframe_num;
+	uint16_t bmp_size;
+	uint32_t bmp_offset;
+	uint32_t subframe_offset[4];
+	uint32_t duration_f;
 };
 struct aya::ALICE_AGAFILE_SUBFRAME {
 	int16_t pos_x;
 	int16_t pos_y;
 	uint16_t tilenum;
+	uint16_t sizeflip;
 	uint16_t size_bmp;
 	uint32_t offset_tile;
 	uint32_t offset_bmp;
@@ -260,14 +262,15 @@ class aya::CPhoto {
 		auto hash_get(int flip) const -> uint64_t;
 		auto hash_getIndexed(int flip) const -> uint64_t;
 
+		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
 		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
 		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
 		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> Blob;
-		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
+		auto convert_rawAGI(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;
 		auto convert_twiddled(int format) const -> Blob;
