@@ -1160,7 +1160,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 			);*/
 		}
 	
-		printf("frame len: %d\n",fileframe.duration_f);
+		//printf("frame len: %d\n",fileframe.duration_f);
 		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
 
