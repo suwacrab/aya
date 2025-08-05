@@ -106,6 +106,7 @@ namespace aya {
 		std::string filename_json;
 		bool do_compress;
 		int format;
+		int lenient_count;
 
 		int useroffset_x,useroffset_y;
 		bool verbose;
@@ -181,22 +182,23 @@ struct aya::ALICE_AGAFILE_HEADER {
 	uint32_t offset_bmpsection;
 };
 struct aya::ALICE_AGAFILE_FRAME {
-	uint16_t subframe_num;
+	uint16_t subframe_len;
 	uint16_t bmp_size;
 	uint32_t bmp_offset;
-	uint32_t subframe_offset[4];
+	uint16_t subframe_offset[4];
 	uint32_t duration_f;
 };
 struct aya::ALICE_AGAFILE_SUBFRAME {
+	// attr stores both attr1 data and attr2 data
+	// attr bits 12-15: same as attr 1 bits 12-15
+	// attr bits 5-7:   same as attr 0 bits 13-15
+	// attr bits 0-3:   palette idx
 	int16_t pos_x;
 	int16_t pos_y;
-	uint16_t tilenum;
-	uint16_t sizeflip;
-	uint16_t size_bmp;
-	uint32_t offset_tile;
-	uint32_t offset_bmp;
-	uint32_t duration_f;
-	uint32_t duration_ms;
+	uint16_t attr;
+	uint16_t charnum;
+	uint16_t size_xy;
+	uint16_t pad;
 };
 
 struct aya::CColor {

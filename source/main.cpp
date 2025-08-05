@@ -46,6 +46,7 @@ int main(int argc,const char* argv[]) {
 	std::string param_aga_json;
 	int param_aga_useroffsetX = 0;
 	int param_aga_useroffsetY = 0;
+	int param_aga_leniency = 0;
 
 	int pixelfmt_flags = 0xFF;
 
@@ -116,6 +117,9 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-aga_useroffset",2)) {
 		param_aga_useroffsetX = std::stoi(argparser.arg_get("-aga_useroffset",2).at(1));
 		param_aga_useroffsetY = std::stoi(argparser.arg_get("-aga_useroffset",2).at(2));
+	}
+	if(argparser.arg_isValid("-aga_leniency",1)) {
+		param_aga_leniency = std::stoi(argparser.arg_get("-aga_leniency",1).at(1));
 	}
 
 	if(do_showusage) {
@@ -330,6 +334,7 @@ int main(int argc,const char* argv[]) {
 			.filename_json = param_aga_json,
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
+			.lenient_count = param_aga_leniency,
 			.useroffset_x = param_aga_useroffsetX,
 			.useroffset_y = param_aga_useroffsetY,
 			.verbose = do_verbose
@@ -381,6 +386,7 @@ static void disp_usage() {
 		"\t.AGA specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-aga_json <json>        specifies aseprite spritesheet .json to use\n"
+		"\t\t-aga_leniency <n>       if enabled, each object allows at least <n> empty characters\n"
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());

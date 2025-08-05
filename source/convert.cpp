@@ -963,6 +963,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 
 	const int useroffset_x = info.useroffset_x;
 	const int useroffset_y = info.useroffset_y;
+	const int lenient_count = info.lenient_count;
 
 	// setup frame list ---------------------------------@/
 	Blob out_blob;
@@ -996,6 +997,9 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 				std::puts("aya::CPhoto::convert_fileNGI(): error: subimage X size must be multiple of 8!!");
 				std::exit(-1);
 			}
+			if(subframe_photo.all_equals(aya::CColor())) {
+				continue;
+			}
 
 			// setup tile grid --------------------------@/
 			auto subframe_tiles = subframe_photo.rect_split(8,8);
@@ -1024,6 +1028,12 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 				AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
 				AGBShape_Vert,		AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
 														AGBShape_Vert,		AGBShape_Square
+			};
+			const std::array<int,12> AGBSizeIDs {
+				0,	0,	1,
+				0,	1,	2,
+				1,	2,	2,	3,
+						3,	3
 			};
 
 			for(int i=0; i<grid_area; i++) {
@@ -1055,8 +1065,8 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 						if(largest_area > area) continue;
 						if(iy + size.y > grid_height) continue;
 						if(ix + size.x > grid_width) continue;
-						// break out if anything in range is used
-						const int lenient_count = 0;
+
+						// break out if anything in range is marked as used
 						int num_empty = 0;
 						bool area_usable = true;
 						for(int y=0; y<size.y; y++) {
@@ -1068,7 +1078,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 								if(emptygrid_get(x+ix,y+iy)) {
 									num_empty++;
 								}
-								if(lenient_count != -1 && num_empty > lenient_count) {
+								if(num_empty > lenient_count) {
 									area_usable = false;
 									break;
 								}
@@ -1084,6 +1094,23 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 					const auto& sizeentry = AGBSizes.at(largest_areaIdx);
 					const int size_x = sizeentry.x;
 					const int size_y = sizeentry.y;
+					const size_t bmp_tileOffset = blob_bmpsection.size();
+					const size_t bmp_tileNum = bmp_tileOffset / 32;
+
+					// if all the tiles are empty, leave.
+					int tiles_allEmpty = true;
+					for(int y=0; y<size_y; y++) {
+						for(int x=0; x<size_x; x++) {
+							// mark area as used
+							auto tile = tilegrid_get(x+ix,y+iy);
+							if(!tile->all_equals(aya::CColor())) {
+								tiles_allEmpty = false;
+								break;
+							}
+						}
+					}
+					if(tiles_allEmpty) continue;
+
 					// write tile
 					for(int y=0; y<size_y; y++) {
 						for(int x=0; x<size_x; x++) {
@@ -1095,13 +1122,27 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 							blob_bmpsection.write_blob(bmpblob);
 						}
 					}
+					
+					int attr_bpp = 0;
+					if(aya::alice_graphfmt::getBPP(format) == 8) {
+						attr_bpp = 1;
+					}
+					int attr = 
+						(AGBShapes.at(largest_areaIdx) << 6) |
+						(attr_bpp << 5) |
+						(AGBSizeIDs.at(largest_areaIdx) << 14);
 
 					aya::ALICE_AGAFILE_SUBFRAME filesubframe = {};
-					filesubframe.pos_x -= useroffset_x;
-					filesubframe.pos_y -= useroffset_y;
-					filesubframe.sizeflip = AGBShapes.at(largest_areaIdx);
+					filesubframe.pos_x = (ix*8) - useroffset_x;
+					filesubframe.pos_y = (iy*8) - useroffset_y;
+					filesubframe.attr = attr;
+					filesubframe.charnum = bmp_tileNum;
+					filesubframe.size_xy = 
+						(size_x*8) |
+						(size_y*8) << 8;
 
 					blob_subframesection.write_raw(&filesubframe,sizeof(filesubframe));
+					fileframe.subframe_len++;
 					subframe_index++;
 				}
 			}
@@ -1119,6 +1160,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 			);*/
 		}
 	
+		printf("frame len: %d\n",fileframe.duration_f);
 		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
 
