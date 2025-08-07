@@ -987,7 +987,8 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 		fileframe.bmp_size = 0;
 		fileframe.bmp_offset = blob_bmpsection.size();
 		fileframe.duration_f = wrkframe.m_durationFrame;
-		fileframe.subframe_offset[0] = subframe_index;
+
+		std::vector<aya::ALICE_AGAFILE_SUBFRAME> subframestruct_table;
 
 		// write each subframe --------------------------@/
 		for(int sf=0; sf<wrkframe.subframe_count(); sf++) {
@@ -1141,13 +1142,11 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 						(size_x*8) |
 						(size_y*8) << 8;
 
-					blob_subframesection.write_raw(&filesubframe,sizeof(filesubframe));
+					subframestruct_table.push_back(filesubframe);
 					fileframe.subframe_len++;
-					subframe_index++;
 				}
 			}
 
-			// write subframe data ----------------------@/
 			if(info.verbose) {
 				printf("subframe[%d][%d]: (%4d,%4d)\n",
 					f,sf,
@@ -1155,12 +1154,30 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 					subframe_photo.height()
 				);
 			}
-			/*printf("subframe[%2d][%d]: bmpsize=%zu\n",
-				f,sf,bmpblob.size()
-			);*/
 		}
 	
-		//printf("frame len: %d\n",fileframe.duration_f);
+		// write subframe data ----------------------@/
+		for(int i=0; i<4; i++) {
+			// write offset
+			fileframe.subframe_offset[i] = subframe_index;
+			// write objects, flipped & nonflipped
+			int flip_h = (i&1);
+			int flip_v = (i>>1)&1;
+			for(const auto &entry_orig : subframestruct_table) {
+				aya::ALICE_AGAFILE_SUBFRAME entry = entry_orig;
+				const int sizedat = entry.size_xy;
+				int size_x = sizedat & 0xFF;
+				int size_y = (sizedat >> 8);
+				if(flip_h) entry.pos_x = width() - 1 - entry.pos_x - size_x;
+				if(flip_v) entry.pos_y = height() - 1 - entry.pos_y - size_y;
+				entry.attr |= (i<<12);
+				blob_subframesection.write_raw(&entry,sizeof(entry));
+				subframe_index++;
+				//std::printf("obj (f%d): (%d,%d) [%d,%d]\n",i,entry.pos_x,entry.pos_y,size_x,size_y);
+			}
+		}
+		//std::printf("subframe cnt: %d\n",fileframe.subframe_len);
+		//std::printf("frame len: %d\n",fileframe.duration_f);
 		blob_framesection.write_raw(&fileframe,sizeof(fileframe));
 	}
 
@@ -1174,8 +1191,15 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 		blob_paletsection.write_u32(0);
 	}
 
+	// pad sections out ---------------------------------@/
+	constexpr int pad_word = 0xAA;
+	blob_framesection.pad(16,pad_word); // pad to nearest 16;
+	blob_subframesection.pad(16,pad_word); // pad to nearest 16;
+	blob_paletsection.pad(16,pad_word); // pad to nearest 16;
+	blob_bmpsection.pad(16,pad_word); // pad to nearest 16;
+
 	// create header ------------------------------------@/
-	size_t offset_framesection = sizeof(ALICE_AGAFILE_HEADER);
+	size_t offset_framesection = 48; // header is padded to 48 bytes.
 	size_t offset_subframesection = offset_framesection + blob_framesection.size();
 	size_t offset_paletsection = offset_subframesection + blob_subframesection.size();
 	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
@@ -1195,6 +1219,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	header.offset_bmpsection = offset_bmpsection;
 
 	blob_headersection.write_raw(&header,sizeof(header));
+	blob_headersection.pad(offset_framesection,pad_word);
 
 	out_blob.write_blob(blob_headersection);
 	out_blob.write_blob(blob_framesection);
