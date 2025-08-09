@@ -9,6 +9,8 @@ available formats:
 	*	`.NGA`: Used for 2D animations.
 	*	`.NGI`: Used for static 2D images.
 	*	`.NGM`: Used for storing tilemaps.
+-	GBA:
+	*	`.AGA`: Used for 2D animations.
 
 ---
 # Building
@@ -40,6 +42,10 @@ aya -p -fmt nga i4 -i animation.png -o animation.nga -nga_json animation.json
 
 `-p` **must** be specified if the source image has a palette.
 
+When it comes to exporting aseprite's .JSON files, make sure all the border
+options are set to the defaults (That is, no `Trim Sprite`). Also, in the
+`Output` options, make sure the data exports as `Array` instead of `Hash`.
+
 ### Usage notes: .NGA
 ---
 
@@ -52,9 +58,14 @@ without having to alter your code.
 
 Setting said offset is done via the `nga_useroffset` option.
 
-Also, when it comes to exporting aseprite's .JSON files, make sure all the border
-options are set to the defaults (That is, no `Trim Sprite`). Also, in the
-`Output` options, make sure the data exports as `Array` instead of `Hash`.
+### Usage notes: .AGA
+---
+
+Each subimage has an X/Y coordinate that's used from offsetting them from the
+animation's origin. This is useful if you want to hardcode an image's center
+without having to alter your code.
+
+Setting the offset of each subframe is done via the `aga_useroffset` option.
 
 ---
 # Format specification
@@ -199,7 +210,13 @@ The `format` field for the following structures is defined as such:
 ### GBA Image Formats
 ---
 
-AGA files contain sprite animations. They're similar to NGA files.
+AGA files contain sprite animations. In structure, they're a bit similar to .NGA
+files. That is, they contain:
+
+-	frames, which store animation metadata (animation frame durations)
+-	subframes, which each correspond to one hardware GBA sprite. Each frame consists of zero (if blank) or more subframes.
+-	palette data, which stores the colors the frames will use.
+-	bitmap data, which is the 16-color or 256-color characters for each frame.
 
 ```
 *	header section
