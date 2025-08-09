@@ -198,7 +198,7 @@ struct aya::ALICE_AGAFILE_SUBFRAME {
 	uint16_t attr;
 	uint16_t charnum;
 	uint16_t size_xy; // x in lower byte, y in high byte
-	uint16_t pad;
+	uint16_t charcnt;
 };
 
 struct aya::CColor {

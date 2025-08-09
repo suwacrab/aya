@@ -1113,6 +1113,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 					if(tiles_allEmpty) continue;
 
 					// write tile
+					int num_chars = 0;
 					for(int y=0; y<size_y; y++) {
 						for(int x=0; x<size_x; x++) {
 						// mark area as used
@@ -1121,6 +1122,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 							auto bmpblob = tile->convert_rawAGI(format);
 							fileframe.bmp_size += bmpblob.size();
 							blob_bmpsection.write_blob(bmpblob);
+							num_chars++;
 						}
 					}
 					
@@ -1141,6 +1143,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 					filesubframe.size_xy = 
 						(size_x*8) |
 						(size_y*8) << 8;
+					filesubframe.charcnt = num_chars;
 
 					subframestruct_table.push_back(filesubframe);
 					fileframe.subframe_len++;
@@ -1168,8 +1171,8 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 				const int sizedat = entry.size_xy;
 				int size_x = sizedat & 0xFF;
 				int size_y = (sizedat >> 8);
-				if(flip_h) entry.pos_x = width() - 1 - entry.pos_x - size_x;
-				if(flip_v) entry.pos_y = height() - 1 - entry.pos_y - size_y;
+				if(flip_h) entry.pos_x = (-entry.pos_x) - size_x - 1;
+				if(flip_v) entry.pos_y = (-entry.pos_y) - size_y - 1;
 				entry.attr |= (i<<12);
 				blob_subframesection.write_raw(&entry,sizeof(entry));
 				subframe_index++;
