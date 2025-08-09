@@ -218,13 +218,13 @@ AGA files contain sprite animations. They're similar to NGA files.
 		0x00 | ushort    | number of subframes frame has
 		0x02 | ushort    | bitmap size
 		0x04 | int       | frame's bitmap data offset (relative to bitmap section offset)
-		0x08 | ushort[4] | index of subframes in subframe section, for each mirror orientation
+		0x08 | ushort[4] | index of subframes in subframe section, for each mirror orientation*
 		0x10 | int       | duration (in frames) this frame will display for
 *	subframe section
 	*	for each subframe, it's the following:
 		0x00 | short[2]  | X,Y offset for drawing
-		0x04 | ushort    | OAM attributes*
-		0x06 | ushort    | character number**
+		0x04 | ushort    | OAM attributes**
+		0x06 | ushort    | character number***
 		0x08 | ushort    | character count
 		0x0A | uchar[2]  | bitmap dimensions (X,Y)
 *	palette section
@@ -232,4 +232,8 @@ AGA files contain sprite animations. They're similar to NGA files.
 *	bitmap section
 	0x00 | char[]   | bitmap data
 ```
+
+-	`*`: To ease computations during drawing, each frame contains 4 lists of subframes, with one for each possible sprite orientation. 0 is non-flipped, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
+-	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
+-	`***`: The character number gets incremented by the character count for each object. That is, if it were a 8-frame 8x8 sprite, subframe 0 would have character number 0, subframe 1 would have charnum 1...
 
