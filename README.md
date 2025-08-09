@@ -215,18 +215,18 @@ AGA files contain sprite animations. They're similar to NGA files.
 	0x20 | int      | bitmap section offset
 *	frame section
 	*	for each frame, it's the following:
-		0x00 | short    | number of subframes frame has
-		0x02 | short    | time duration (in frames) this frame will display for
-		0x04 | int      | index of first subframe, in subframe section	
+		0x00 | ushort    | number of subframes frame has
+		0x02 | ushort    | bitmap size
+		0x04 | int       | frame's bitmap data offset (relative to bitmap section offset)
+		0x08 | ushort[4] | index of subframes in subframe section, for each mirror orientation
+		0x10 | int       | duration (in frames) this frame will display for
 *	subframe section
 	*	for each subframe, it's the following:
-		0x00 | int      | bmp offset (divided by 8)
-		0x04 | int      | bmp size (divided by 8)
-		0x08 | int      | palette number
-		0x0C | short    | format
-		0x0E | short    | bitmap width (rounded up to nearest 8 dots)
-		0x10 | short[2] | bitmap dimensions (X,Y)
-		0x14 | short[2] | X,Y offset when drawing
+		0x00 | short[2]  | X,Y offset for drawing
+		0x04 | ushort    | OAM attributes*
+		0x06 | ushort    | character number**
+		0x08 | ushort    | character count
+		0x0A | uchar[2]  | bitmap dimensions (X,Y)
 *	palette section
 	0x00 | short[]  | palette data
 *	bitmap section

@@ -90,14 +90,16 @@ local ls_aga_header = {
 local ls_aga_frame = {
 	{ 'number of subframes frame has', 'ushort' };
 	{ 'bitmap size','ushort' };
-	{ 'frame\'s bitmap data offset (relative to bitmap section offset)','ushort' };
+	{ 'frame\'s bitmap data offset (relative to bitmap section offset)','int' };
 	{ 'index of subframes in subframe section, for each mirror orientation', 'ushort',4 };
 	{ 'duration (in frames) this frame will display for', 'int' };
 }
 local ls_aga_subframe = {
 	{ 'X,Y offset for drawing', 'short',2 };
-	{ 'OAM attributes','ushort' };
-	{ 'character number', 'ushort' };
+	{ 'OAM attributes*','ushort' };
+	{ 'character number**', 'ushort' };
+	{ 'character count', 'ushort' };
+	{ 'bitmap dimensions (X,Y)', 'uchar',2 };
 }
 
 local printf = function(str,...) print(str:format(...)) end
@@ -106,6 +108,7 @@ local function print_flist(fl)
 	print("entry!")
 	local sizes = {
 		['char'] = 1;
+		['uchar'] = 1;
 		['short'] = 2;
 		['ushort'] = 2;
 		['int'] = 4;
@@ -127,7 +130,7 @@ local function print_flist(fl)
 				error("field is not aligned!")
 			end
 		end
-		printf("0x%02X | %-8s | %s",offset,ftype_str,entry[1])
+		printf("0x%02X | %-9s | %s",offset,ftype_str,entry[1])
 		local size = sizes[ftype] * (count and count or 1)
 		offset = offset + size
 	end
