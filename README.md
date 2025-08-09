@@ -204,13 +204,15 @@ AGA files contain sprite animations. They're similar to NGA files.
 ```
 *	header section
 	0x00 | char[4]  | header ("AGA\0")
-	0x04 | int      | format
-	0x08 | short    | frame count
-	0x0A | short    | frame section count
-	0x0C | int      | frame section offset
-	0x10 | int      | subframe section offset
-	0x14 | int      | bitmap section offset
-	0x18 | int      | palette section offset
+	0x04 | short[2] | image dimensions
+	0x08 | int      | format
+	0x0C | short    | palette size
+	0x0E | short    | frame count
+	0x10 | int      | bitmap size
+	0x14 | int      | frame section offset
+	0x18 | int      | subframe section offset
+	0x1C | int      | palette section offset
+	0x20 | int      | bitmap section offset
 *	frame section
 	*	for each frame, it's the following:
 		0x00 | short    | number of subframes frame has

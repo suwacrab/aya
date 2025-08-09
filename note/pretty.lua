@@ -77,14 +77,27 @@ local ls_ngm_map = {
 
 local ls_aga_header = {
 	{ 'header ("AGA\\0")','char',4 };
-	{ 'format','short' };
-	{ 'palette size','short' };
-	{ 'frame count','short' };
-	{ 'frame section count','short' };
+	{ 'image dimensions','short',2 };
+	{ 'format','int' };
+	{ 'palette size','ushort' };
+	{ 'frame count','ushort' };
+	{ 'bitmap size','int' };
 	{ 'frame section offset','int' };
 	{ 'subframe section offset','int' };
 	{ 'palette section offset','int' };
 	{ 'bitmap section offset','int' };
+}
+local ls_aga_frame = {
+	{ 'number of subframes frame has', 'ushort' };
+	{ 'bitmap size','ushort' };
+	{ 'frame\'s bitmap data offset (relative to bitmap section offset)','ushort' };
+	{ 'index of subframes in subframe section, for each mirror orientation', 'ushort',4 };
+	{ 'duration (in frames) this frame will display for', 'int' };
+}
+local ls_aga_subframe = {
+	{ 'X,Y offset for drawing', 'short',2 };
+	{ 'OAM attributes','ushort' };
+	{ 'character number', 'ushort' };
 }
 
 local printf = function(str,...) print(str:format(...)) end
@@ -94,6 +107,7 @@ local function print_flist(fl)
 	local sizes = {
 		['char'] = 1;
 		['short'] = 2;
+		['ushort'] = 2;
 		['int'] = 4;
 	}
 	local offset = 0
@@ -130,6 +144,8 @@ print_flist(ls_ngi_header)
 print_flist(ls_ngm_header)
 print_flist(ls_ngm_map)]]
 print_flist(ls_aga_header)
+print_flist(ls_aga_frame)
+print_flist(ls_aga_subframe)
 
 end
 
