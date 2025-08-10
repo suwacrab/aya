@@ -47,6 +47,14 @@ When it comes to exporting aseprite's .JSON files, make sure all the border
 options are set to the defaults (That is, no `Trim Sprite`). Also, in the
 `Output` options, make sure the data exports as `Array` instead of `Hash`.
 
+Use the following settings when exporting an animation via aseprite:
+
+![borders](https://files.catbox.moe/xnfkac.png)
+
+![output](https://files.catbox.moe/8ol3k6.png)
+
+.json files not using the `Array` option will not be parsed correctly.
+
 ### Usage notes: .NGA
 ---
 
@@ -268,13 +276,6 @@ AGM files contain a background map, it's palette, and it's bitmap data.
 	0x1C | int       | palette section offset
 	0x20 | int       | map section offset
 	0x24 | int       | bitmap section offset
-*	subframe section
-	*	for each subframe, it's the following:
-		0x00 | short[2]  | X,Y offset for drawing
-		0x04 | ushort    | OAM attributes**
-		0x06 | ushort    | character number***
-		0x08 | ushort    | character count
-		0x0A | uchar[2]  | bitmap dimensions (X,Y)
 *	palette section
 	0x00 | short[]  | palette data
 *	map section
