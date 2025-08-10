@@ -219,6 +219,10 @@ files. That is, they contain:
 -	palette data, which stores the colors the frames will use.
 -	bitmap data, which is the 16-color or 256-color characters for each frame.
 
+-	`*`: To ease computations during drawing, each frame contains 4 lists of subframes, with one for each possible sprite orientation. 0 is non-flipped, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
+-	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
+-	`***`: The character number gets incremented by the character count for each object. That is, if it were a 8-frame 8x8 sprite, subframe 0 would have character number 0, subframe 1 would have charnum 1...
+
 ```
 *	header section
 	0x00 | char[4]  | header ("AGA\0")
@@ -250,10 +254,6 @@ files. That is, they contain:
 *	bitmap section
 	0x00 | char[]   | bitmap data
 ```
-
--	`*`: To ease computations during drawing, each frame contains 4 lists of subframes, with one for each possible sprite orientation. 0 is non-flipped, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
--	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
--	`***`: The character number gets incremented by the character count for each object. That is, if it were a 8-frame 8x8 sprite, subframe 0 would have character number 0, subframe 1 would have charnum 1...
 
 AGM files contain a background map, it's palette, and it's bitmap data.
 
