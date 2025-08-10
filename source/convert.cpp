@@ -1231,6 +1231,96 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	out_blob.write_blob(blob_bmpsection);
 	return out_blob;
 }
+auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> Blob {
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+
+	const int subimage_xsize = info.subimage_xsize;
+	const int subimage_ysize = info.subimage_ysize;
+
+	bool use_subimage = false;
+
+	if(subimage_xsize%8 != 0) {
+		std::puts("aya::CPhoto::convert_fileAGI(): error: subimage X size must be multiple of 8!!");
+		std::exit(-1);
+	}
+
+	if(subimage_xsize==0 && subimage_ysize==0) {
+		use_subimage = false;
+	} else if(subimage_xsize>0 && subimage_ysize>0) {
+		use_subimage = true;
+	} else {
+		std::printf("aya::CPhoto::convert_fileAGI(): error: bad subimage size (%d,%d)\n",
+			subimage_xsize,subimage_ysize
+		);
+		std::exit(-1);	
+	}
+
+	// setup bitmap info --------------------------------@/
+	Blob out_blob;
+	Blob blob_headersection;
+	Blob blob_paletsection;
+	Blob blob_bmpsection;
+
+	constexpr int header_size = 56;
+	int subimage_count = 0;
+	size_t subimage_datasize = 0;
+
+	// write frames -------------------------------------@/
+	if(use_subimage) {
+		auto imagetable = rect_split(subimage_xsize,subimage_ysize);
+		for(auto pic : imagetable) {
+			auto bmpblob = pic->convert_rawAGI(format);
+			blob_bmpsection.write_blob(bmpblob);
+			subimage_datasize = bmpblob.size();
+		}
+	} else {
+		// write bitmap data ----------------------------@/
+		auto bmpblob = convert_rawAGI(format);
+		blob_bmpsection.write_blob(bmpblob);
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::alice_graphfmt::getBPP(format) <= 8) {
+		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
+		for(int p=0; p<color_count; p++) {
+			palet_get(p).write_rgb5a1_agb(blob_paletsection);
+		}
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// pad sections out ---------------------------------@/
+	constexpr int pad_word = 0xAA;
+	blob_paletsection.pad(16,pad_word); // pad to nearest 16;
+	blob_bmpsection.pad(16,pad_word); // pad to nearest 16;
+	
+	// write header & complete file ---------------------@/
+	size_t offset_paletsection = header_size;
+	size_t offset_bmpsection = offset_paletsection + blob_paletsection.size();
+
+	aya::ALICE_AGIFILE_HEADER header = {};
+	header.magic[0] = 'A';
+	header.magic[1] = 'G';
+	header.magic[2] = 'I';
+	header.width = width();
+	header.height = height();
+	header.subimage_count = subimage_count;
+	header.subimage_size = subimage_datasize;
+	header.palet_size = blob_paletsection.size();
+	header.bitmap_size = blob_bmpsection.size();
+	header.offset_paletsection = offset_paletsection;
+	header.offset_bmpsection = offset_bmpsection;
+
+	blob_headersection.write_raw(&header,sizeof(header));
+	blob_headersection.pad(header_size,pad_word);
+
+	out_blob.write_blob(blob_headersection);
+	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_bmpsection);
+
+	return out_blob;
+}
 auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;

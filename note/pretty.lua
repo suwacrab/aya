@@ -114,6 +114,17 @@ local ls_agm_header = {
 	{ 'map section offset','int' };
 	{ 'bitmap section offset','int' };
 }
+local ls_agi_header = {
+	{ 'header ("AGI\\0")','char',4 };
+	{ 'format','int' };
+	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
+	{ 'bitmap dimensions (X,Y)', 'short', 2 };
+	{ 'sub-image count', 'short' };
+	{ 'sub-image dimensions','short', 2 };
+	{ 'size of each sub-image', 'int' };
+	{ 'palette section offset','int' };
+	{ 'bitmap section offset','int' };
+}
 
 local printf = function(str,...) print(str:format(...)) end
 
@@ -161,8 +172,9 @@ print_flist(ls_ngm_header)
 print_flist(ls_ngm_map)
 print_flist(ls_aga_header)
 print_flist(ls_aga_frame)
-print_flist(ls_aga_subframe)]]
-print_flist(ls_agm_header)
+print_flist(ls_aga_subframe)
+print_flist(ls_agm_header)]]
+print_flist(ls_agi_header)
 
 end
 

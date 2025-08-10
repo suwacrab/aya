@@ -48,6 +48,9 @@ int main(int argc,const char* argv[]) {
 	int param_aga_useroffsetY = 0;
 	int param_aga_leniency = 0;
 
+	int param_agi_subimageX = 0;
+	int param_agi_subimageY = 0;
+
 	int pixelfmt_flags = 0xFF;
 
 	std::string param_exportpal_filename;
@@ -120,6 +123,12 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-aga_leniency",1)) {
 		param_aga_leniency = std::stoi(argparser.arg_get("-aga_leniency",1).at(1));
+	}
+
+	// AGI-specific
+	if(argparser.arg_isValid("-agi_subimage",2)) {
+		param_agi_subimageX = std::stoi(argparser.arg_get("-agi_subimage",2).at(1));
+		param_agi_subimageY = std::stoi(argparser.arg_get("-agi_subimage",2).at(2));
 	}
 
 	if(do_showusage) {
@@ -345,6 +354,32 @@ int main(int argc,const char* argv[]) {
 			std::exit(-1);
 		}
 	} 
+	else if(param_filetype == "agi") {
+		/* get format -----------------------------------*/
+		const auto& pixelformat_table = pixelformat_table_alice;
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CAliceAGIConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.subimage_xsize = param_agi_subimageX,
+			.subimage_ysize = param_agi_subimageY,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileAGI(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
 	else if(param_filetype == "agm") {
 		/* get format -----------------------------------*/
 		const auto& pixelformat_table = pixelformat_table_alice;
@@ -413,6 +448,10 @@ static void disp_usage() {
 		"\t\t-aga_json <json>        specifies aseprite spritesheet .json to use\n"
 		"\t\t-aga_leniency <n>       if enabled, each object allows at least <n> empty characters\n"
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
+		"\t.AGI specifics:\n"
+		"\t\tformats: i4,i8,rgb\n"
+		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
+
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
 	std::printf("\tavailable filetypes: aga, agm, mgi, pgi, pga, nga, ngi, ngm\n");

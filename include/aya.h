@@ -24,6 +24,7 @@ namespace aya {
 	struct ALICE_AGAFILE_FRAME;
 	struct ALICE_AGAFILE_SUBFRAME;
 	struct ALICE_AGMFILE_HEADER;
+	struct ALICE_AGIFILE_HEADER;
 
 	namespace patchu_graphfmt {
 		enum {
@@ -110,6 +111,12 @@ namespace aya {
 		int lenient_count;
 
 		int useroffset_x,useroffset_y;
+		bool verbose;
+	};
+	struct CAliceAGIConvertInfo {
+		bool do_compress;
+		int format;
+		int subimage_xsize,subimage_ysize;
 		bool verbose;
 	};
 	struct CAliceAGMConvertInfo {
@@ -218,6 +225,18 @@ struct aya::ALICE_AGMFILE_HEADER {
 	uint32_t offset_mapsection;
 	uint32_t offset_bmpsection;
 };
+struct aya::ALICE_AGIFILE_HEADER {
+	char magic[4];
+	uint32_t format_flags;
+	int16_t width,height;
+	int16_t subimage_width,subimage_height;
+	uint16_t subimage_count;
+	uint16_t subimage_size;
+	uint32_t palet_size;
+	uint32_t bitmap_size;
+	uint32_t offset_paletsection;
+	uint32_t offset_bmpsection;
+};
 
 struct aya::CColor {
 	uint8_t a,r,g,b;
@@ -283,6 +302,7 @@ class aya::CPhoto {
 		auto hash_getIndexed(int flip) const -> uint64_t;
 
 		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
+		auto convert_fileAGI(const CAliceAGIConvertInfo &info) -> Blob;
 		auto convert_fileAGM(const CAliceAGMConvertInfo &info) -> Blob;
 		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
