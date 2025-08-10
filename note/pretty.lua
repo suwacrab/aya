@@ -102,6 +102,19 @@ local ls_aga_subframe = {
 	{ 'bitmap dimensions (X,Y)', 'uchar',2 };
 }
 
+local ls_agm_header = {
+	{ 'header ("AGM\\0")','char',4 };
+	{ 'image dimensions (characters)','short',2 };
+	{ 'image dimensions (dots)','short',2 };
+	{ 'format','int' };
+	{ 'map size','int' };
+	{ 'palette size','int' };
+	{ 'bitmap size','int' };
+	{ 'palette section offset','int' };
+	{ 'map section offset','int' };
+	{ 'bitmap section offset','int' };
+}
+
 local printf = function(str,...) print(str:format(...)) end
 
 local function print_flist(fl)
@@ -145,10 +158,11 @@ print_flist(ls_palet)
 print_flist(ls_bitmap)
 print_flist(ls_ngi_header)
 print_flist(ls_ngm_header)
-print_flist(ls_ngm_map)]]
+print_flist(ls_ngm_map)
 print_flist(ls_aga_header)
 print_flist(ls_aga_frame)
-print_flist(ls_aga_subframe)
+print_flist(ls_aga_subframe)]]
+print_flist(ls_agm_header)
 
 end
 
