@@ -266,6 +266,7 @@ files. That is, they contain:
 AGM files contain a background map, it's palette, and it's bitmap data.
 
 ```
+*	header section
 	0x00 | char[4]   | header ("AGM\0")
 	0x04 | short[2]  | image dimensions (characters)
 	0x08 | short[2]  | image dimensions (dots)
