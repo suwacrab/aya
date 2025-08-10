@@ -1231,4 +1231,159 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	out_blob.write_blob(blob_bmpsection);
 	return out_blob;
 }
+auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob {
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+
+	if((width()%8) != 0 || (height()%8) != 0) {
+		std::puts("aya::CPhoto::convert_fileAGM(): error: image dimensions must be multiple of 8!!");
+		std::exit(-1);
+	}
+
+	const int max_numtiles = 1024;
+	const int map_width = width() / 8;
+	const int map_height = height() / 8;
+
+	int subimage_count = 0;
+
+	Blob out_blob;
+	Blob blob_headersection;
+	Blob blob_paletsection;
+	Blob blob_mapsection;
+	Blob blob_bmpsection;
+
+	// write frames -------------------------------------@/
+	auto imagetable = rect_split(8,8); {
+		std::map<uint64_t,size_t> imghash_map;
+		std::map<uint64_t,size_t> imghash_mapRealIdx;
+		size_t num_processedCel = 0;
+
+		int num_flips = 4;
+
+		for(auto srcpic : imagetable) {
+			const std::array<uint64_t,4> image_hashes = {
+				srcpic->hash_getIndexed(0b00),
+				srcpic->hash_getIndexed(0b01),
+				srcpic->hash_getIndexed(0b10),
+				srcpic->hash_getIndexed(0b11)
+			};
+
+			bool found_used = false;
+			int tile_index = 0;
+			int flip_index = 0;
+
+			for(int fi=0; fi<num_flips; fi++) {
+				const uint64_t hash = image_hashes[fi];
+				if(imghash_map.count(hash) > 0) {
+					flip_index = fi;
+					tile_index = imghash_map[hash];
+					found_used = true;
+					
+					if(info.verbose) {
+						auto get_tileXY = [=](int idx, int &x, int &y) {
+							x = 8 * (idx % (width()/8));
+							y = 8 * (idx / (width()/8));
+						};
+						
+						int orig_index = imghash_mapRealIdx[hash];
+						int src_x,src_y;
+						int cel_x,cel_y;
+						get_tileXY(num_processedCel,src_x,src_y);
+						get_tileXY(orig_index,cel_x,cel_y);
+						if(fi == 0) {
+							// printf("tile hit! (%3d,%3d) == tile %3d\n",src_x,src_y,tile_index);
+						} else {
+							printf("flip hit! (%3d,%3d) == tile %3d (%3d,%3d) [fi=%d]\n",src_x,src_y,orig_index,cel_x,cel_y,fi);
+						}
+					}
+					
+					break;
+				}
+			}
+
+			// write tile to bmp/map
+			if(found_used) {
+				blob_mapsection.write_u16(tile_index | (flip_index<<10));
+			} else {
+				int index = subimage_count;
+
+				if(index > max_numtiles) {
+					std::printf(
+						"aya::CPhoto::convert_fileAGM(): error: cel count over! (cel count: >=%3d)\n"
+						"consider using the 12-bit flag to use more tiles.\n",
+						index
+					);
+					std::exit(-1);
+				}
+
+				imghash_map[image_hashes[0]] = index;
+				imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
+				auto bmpblob = srcpic->convert_rawAGI(format);
+				blob_bmpsection.write_blob(bmpblob);
+				blob_mapsection.write_u16(index);
+				subimage_count++;
+			}
+
+			num_processedCel++;
+		}
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::alice_graphfmt::getBPP(format) <= 8) {
+		Blob palet_blob;
+		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
+		for(int p=0; p<color_count; p++) {
+			palet_get(p).write_rgb5a1_agb(blob_paletsection);
+		}
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// pad sections out ---------------------------------@/
+	constexpr int header_size = 40;
+	constexpr int pad_word = 0xAA;
+	blob_paletsection.pad(32,pad_word); // pad to nearest 16;
+	blob_mapsection.pad(32,pad_word); // pad to nearest 16;
+	blob_bmpsection.pad(32,pad_word); // pad to nearest 16;
+
+	// create header ------------------------------------@/
+	if(info.verbose) {
+		std::printf("\tCEL section: %.2f K\n",
+			((float)blob_bmpsection.size()) / 1024.0
+		);
+		std::printf("\tCHP section: %.2f K (n.cels == %d)\n",
+			((float)blob_mapsection.size()) / 1024.0,
+			subimage_count
+		);
+	}
+	
+	size_t offset_paletsection = header_size;
+	size_t offset_mapsection = offset_paletsection + blob_paletsection.size();
+	size_t offset_bmpsection = offset_mapsection + blob_mapsection.size();
+
+	aya::ALICE_AGMFILE_HEADER header = {};
+	header.magic[0] = 'A';
+	header.magic[1] = 'G';
+	header.magic[2] = 'M';
+	header.width_dot = width();
+	header.width_chr = map_width;
+	header.height_dot = height();
+	header.height_chr = map_height;
+	header.palet_size = blob_paletsection.size();
+	header.map_size = blob_mapsection.size();
+	header.bitmap_size = blob_bmpsection.size();
+	header.offset_paletsection = offset_paletsection;
+	header.offset_mapsection = offset_mapsection;
+	header.offset_bmpsection = offset_bmpsection;
+
+	blob_headersection.write_raw(&header,sizeof(header));
+	blob_headersection.pad(header_size,pad_word);
+
+	out_blob.write_blob(blob_headersection);
+	out_blob.write_blob(blob_paletsection);
+	out_blob.write_blob(blob_mapsection);
+	out_blob.write_blob(blob_bmpsection);
+
+	return out_blob;
+}
 

@@ -345,6 +345,30 @@ int main(int argc,const char* argv[]) {
 			std::exit(-1);
 		}
 	} 
+	else if(param_filetype == "agm") {
+		/* get format -----------------------------------*/
+		const auto& pixelformat_table = pixelformat_table_alice;
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CAliceAGMConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileAGM(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
 	else {
 		std::printf("aya: error: unknown output filetype '%s'\n",param_filetype.c_str());
 		std::exit(-1);
@@ -390,7 +414,7 @@ static void disp_usage() {
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: aga, mgi, pgi, pga, nga, ngi, ngm\n");
+	std::printf("\tavailable filetypes: aga, agm, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 
