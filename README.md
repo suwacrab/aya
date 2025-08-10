@@ -278,10 +278,10 @@ AGM files contain a background map, it's palette, and it's bitmap data.
 	0x20 | int       | map section offset
 	0x24 | int       | bitmap section offset
 *	palette section
-	0x00 | short[]  | palette data
+	0x00 | short[]   | palette data
 *	map section
 	0x00 | short[]   | map data
 *	bitmap section
-	0x00 | char[]   | bitmap data
+	0x00 | char[]    | bitmap data
 ```
 
