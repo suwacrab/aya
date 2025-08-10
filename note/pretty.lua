@@ -117,11 +117,12 @@ local ls_agm_header = {
 local ls_agi_header = {
 	{ 'header ("AGI\\0")','char',4 };
 	{ 'format','int' };
-	{ 'bitmap width (rounded up to nearest 8 dots)', 'short' };
 	{ 'bitmap dimensions (X,Y)', 'short', 2 };
-	{ 'sub-image count', 'short' };
 	{ 'sub-image dimensions','short', 2 };
-	{ 'size of each sub-image', 'int' };
+	{ 'sub-image count', 'short' };
+	{ 'size of each sub-image', 'short' };
+	{ 'palette section size', 'int' };
+	{ 'bitmap section size', 'int' };
 	{ 'palette section offset','int' };
 	{ 'bitmap section offset','int' };
 }

@@ -291,15 +291,16 @@ image atlases, etc.)
 
 ```
 *	header section
-	0x00 | char[4]  | header ("AGI\0")
-	0x04 | int      | format
-	0x08 | short    | bitmap width (rounded up to nearest 8 dots)
-	0x0A | short[2] | bitmap dimensions (X,Y)
-	0x0E | short    | sub-image count
-	0x10 | short[2] | sub-image dimensions
-	0x14 | int      | size of each sub-image
-	0x18 | int      | palette section offset
-	0x1C | int      | bitmap section offset
+	0x00 | char[4]   | header ("AGI\0")
+	0x04 | int       | format
+	0x08 | short[2]  | bitmap dimensions (X,Y)
+	0x0C | short[2]  | sub-image dimensions
+	0x10 | short     | sub-image count
+	0x12 | short     | size of each sub-image
+	0x14 | int       | palette section size
+	0x18 | int       | bitmap section size
+	0x1C | int       | palette section offset
+	0x20 | int       | bitmap section offset
 *	palette section
 	0x00 | char[4]  | header ("PAL\0")
 	0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
