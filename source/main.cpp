@@ -409,6 +409,7 @@ static void disp_usage() {
 		"\t\t-ngm_12bit              raises max number of map cels from 1024->4096 (if 4bpp), or 512->2048 (if 8bpp)\n"
 		"\t.AGA specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
+		"\t\tCompression-related flags are ignored of .AGA files.\n"
 		"\t\t-aga_json <json>        specifies aseprite spritesheet .json to use\n"
 		"\t\t-aga_leniency <n>       if enabled, each object allows at least <n> empty characters\n"
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
