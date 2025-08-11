@@ -421,7 +421,7 @@ static void disp_usage() {
 		"\t--help            show this dialog\n"
 		"\t-o <output_file>  specify output filename\n"
 		"\t-i <source_file>  specify source filename\n"
-		"\t-fmt <type> <fmt> specify output's pixel format & filetype\n"
+		"\t-fmt <type> <fmt> specify output's filetype & pixel format\n"
 		"\t-nc               don't use gz compression\n"
 		"\t-p                use palette\n"
 		"\t-v                verbose flag\n"
@@ -456,7 +456,7 @@ static void disp_usage() {
 
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: aga, agm, mgi, pgi, pga, nga, ngi, ngm\n");
+	std::printf("\tavailable filetypes: aga, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 
