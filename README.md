@@ -11,6 +11,7 @@ available formats:
 	*	`.NGM`: Used for storing tilemaps.
 -	GBA:
 	*	`.AGA`: Used for 2D animations.
+	*	`.AGI`: Used for static 2D images.
 	*	`.AGM`: Used for storing tilemaps.
 
 ---
