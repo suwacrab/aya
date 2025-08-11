@@ -302,15 +302,8 @@ image atlases, etc.)
 	0x1C | int       | palette section offset
 	0x20 | int       | bitmap section offset
 *	palette section
-	0x00 | char[4]  | header ("PAL\0")
-	0x04 | int      | palette size (uncompressed, 0 if file contains no palette)
-	*	then, only if the file has a palette, the following:
-		0x08 | int      | palette size (compressed)
-		0x0C | short[]  | palette data (zlib-compressed)
+	0x00 | short[]   | palette data
 *	bitmap section
-	0x00 | char[4]  | header ("CEL\0")
-	0x04 | int      | bitmap size (uncompressed)
-	0x08 | int      | bitmap size (compressed)
-	0x0C | char[]   | bitmap data (zlib-compressed)
+	0x00 | char[]    | bitmap data
 ```
 
