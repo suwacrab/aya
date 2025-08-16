@@ -2,7 +2,6 @@
 #include <memory>
 #include <map>
 
-#include <freeimage.h>
 #include <aya.h>
 #include <blob.h>
 #include <argparse.h>
@@ -10,7 +9,7 @@
 static void disp_usage();
 
 int main(int argc,const char* argv[]) {
-	FreeImage_Initialise();
+	// FreeImage_Initialise();
 
 	auto argparser = CArgParser(argc,argv);
 
@@ -409,7 +408,7 @@ int main(int argc,const char* argv[]) {
 		std::exit(-1);
 	}
 
-	FreeImage_DeInitialise();
+	// FreeImage_DeInitialise();
 }
 
 static void disp_usage() {

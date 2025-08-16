@@ -1,5 +1,7 @@
 #include <aya.h>
-#include <freeimage.h>
+//#include <freeimage.h>
+#include <lodepng.h>
+#include <stdexcept>
 
 namespace aya {
 	CPhoto::CPhoto() {
@@ -9,37 +11,53 @@ namespace aya {
 	}
 	CPhoto::CPhoto(std::string filename,bool paletted, bool opaque_pal) {
 		// load image -----------------------------------@/
-		auto filetype = FreeImage_GetFileType(filename.c_str(),0);
-		auto fbmp = FreeImage_Load(filetype,filename.c_str());
+		std::vector<uint8_t> img_bufferFile;
+		std::vector<uint8_t> img_bufferBMP;
+		unsigned int out_w = 0;
+		unsigned int out_h = 0;
+		lodepng::State state;
+		state.decoder.color_convert = false;
+		state.decoder.ignore_crc = true;
+	//	auto filetype = FreeImage_GetFileType(filename.c_str(),0);
+	//	auto fbmp = FreeImage_Load(filetype,filename.c_str());
+	
+		unsigned int load_error = lodepng::load_file(img_bufferFile, filename);
+		if (load_error) throw std::runtime_error(lodepng_error_text(load_error));
+		load_error = lodepng::decode(img_bufferBMP,out_w,out_h,state,img_bufferFile);
+		if (load_error) throw std::runtime_error(lodepng_error_text(load_error));
 
-		if(!fbmp) {
+		/*if(!fbmp) {
 			std::printf("aya::CPhoto::CPhoto(fname,pal): error: unable to read file %s\n",
 				filename.c_str()
 			);
 			std::exit(-1);
-		}
+		}*/
 
 		if(!paletted) {
-			fbmp = FreeImage_ConvertTo32Bits(fbmp);
+		//	fbmp = FreeImage_ConvertTo32Bits(fbmp);
+			std::puts("unhandled");
+			std::exit(-1);
 		}
 
-		if(!fbmp) {
+		/*if(!fbmp) {
 			std::printf("aya::CPhoto::CPhoto(fname,pal): error: unable to convert '%s' to 32-bit\n",
 				filename.c_str()
 			);
 			std::exit(-1);
-		}
+		}*/
 
 		// set picture data -----------------------------@/
-		m_width = FreeImage_GetWidth(fbmp);
-		m_height = FreeImage_GetHeight(fbmp);
+	//	m_width = FreeImage_GetWidth(fbmp);
+	//	m_height = FreeImage_GetHeight(fbmp);
+		m_width = out_w;
+		m_height = out_h;
 		m_bmpdata = std::vector<aya::CColor>(dimensions());
 		m_palette = std::array<aya::CColor,256>();
 		palet_clear(aya::CColor());
 		clear(aya::CColor());
 
 		if(!paletted) {
-			RGBQUAD fclr;
+			/*RGBQUAD fclr;
 			for(int iy=0; iy<height(); iy++) {
 				for(int ix=0; ix<width(); ix++) {
 					FreeImage_GetPixelColor(fbmp,ix,height()-iy-1,&fclr);
@@ -50,10 +68,11 @@ namespace aya {
 						fclr.rgbBlue
 					);
 				}
-			}
+			}*/
 		} else {
-			RGBQUAD* src_pal = FreeImage_GetPalette(fbmp);
-			if(!src_pal) {
+			//RGBQUAD* src_pal = FreeImage_GetPalette(fbmp);
+			if(state.info_raw.colortype != LCT_PALETTE) {
+			//if(!src_pal) {
 				std::printf("aya::CPhoto::CPhoto(fname,pal): error: image %s has no palette\n",
 					filename.c_str()
 				);
@@ -61,28 +80,36 @@ namespace aya {
 			}
 
 			// get palette ------------------------------@/
-			for(int i=0; i<256; i++) {
-				auto fclr = src_pal[i];
+			for(int i=0; i<state.info_raw.palettesize * 4; i += 4) {
+				/*auto fclr = src_pal[i];
 				palet_getRaw(i) = aya::CColor(
 					0xFF,
 					fclr.rgbRed,
 					fclr.rgbGreen,
 					fclr.rgbBlue
+				);*/
+				palet_getRaw(i/4) = aya::CColor(
+					0xFF,
+					state.info_raw.palette[i + 0],
+					state.info_raw.palette[i + 1],
+					state.info_raw.palette[i + 2]
 				);
 			}
-			palet_getRaw(0).a = 0;
+			palet_getRaw(0).a = 0; // transparent 1st color
 
 			// read from image --------------------------@/
 			for(int iy=0; iy<height(); iy++) {
 				for(int ix=0; ix<width(); ix++) {
-					BYTE index = 0;
-					FreeImage_GetPixelIndex(fbmp,ix,height()-iy-1,&index);
-					dot_getRaw(ix,iy) = aya::CColor(index);
+				//	BYTE index = 0;
+				//	FreeImage_GetPixelIndex(fbmp,ix,height()-iy-1,&index);
+				//	dot_getRaw(ix,iy) = aya::CColor(index);
+					int index = ix + (iy * width());
+					dot_getRaw(ix,iy) = aya::CColor(img_bufferBMP.at(index));
 				}
 			}
 		}
 
-		FreeImage_Unload(fbmp);
+		// FreeImage_Unload(fbmp);
 	}
 	CPhoto::CPhoto(int newwidth, int newheight) {
 		if(newwidth * newheight == 0) {

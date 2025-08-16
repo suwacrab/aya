@@ -1211,7 +1211,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	header.magic[0] = 'A';
 	header.magic[1] = 'G';
 	header.magic[2] = 'A';
-	header.format = format;
+	header.format_flags = format;
 	header.width = width();
 	header.height = height();
 	header.palet_size = blob_paletsection.size();
@@ -1304,7 +1304,7 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> Blob
 	header.magic[0] = 'A';
 	header.magic[1] = 'G';
 	header.magic[2] = 'I';
-	header.format = format;
+	header.format_flags = format;
 	header.width = width();
 	header.height = height();
 	header.subimage_count = subimage_count;
@@ -1457,7 +1457,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob
 	header.magic[0] = 'A';
 	header.magic[1] = 'G';
 	header.magic[2] = 'M';
-	header.format = format;
+	header.format_flags = format;
 	header.width_dot = width();
 	header.width_chr = map_width;
 	header.height_dot = height();

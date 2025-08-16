@@ -12,7 +12,8 @@ CXXFLAGS := -std=c++17
 CXXFLAGS += $(CBASEFLAGS)
 CXXFLAGS += -Wnull-dereference
 
-LDFLAGS	:= -lfreeimage -lz
+#LDFLAGS	:= -lfreeimage -lz
+LDFLAGS	:= -lz
 
 # output
 OBJ_DIR := build
