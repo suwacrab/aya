@@ -54,8 +54,8 @@ Use the following settings when exporting an animation via aseprite:
 
 ![output](https://files.catbox.moe/8ol3k6.png)
 
-.json files not using the `Array` option will not be parsed correctly.\
-Your image file must be a .png.
+-   .json files not using the `Array` option will not be parsed correctly.
+-   Your image file must be a .png.
 
 ### Usage notes: .NGA
 ---

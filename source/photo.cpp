@@ -1,5 +1,4 @@
 #include <aya.h>
-//#include <freeimage.h>
 #include <lodepng.h>
 #include <stdexcept>
 
@@ -10,6 +9,8 @@ namespace aya {
 		m_bmpdata.clear();
 	}
 	CPhoto::CPhoto(std::string filename,bool paletted, bool opaque_pal) {
+		// TODO: check superfamiconv to see how they deal with lodepng,
+		// as lodepng's actual """documentation""" is DOGSHIT
 		// load image -----------------------------------@/
 		std::vector<uint8_t> img_bufferFile;
 		std::vector<uint8_t> img_bufferBMP;
