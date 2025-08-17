@@ -104,7 +104,7 @@ namespace aya {
 				//	BYTE index = 0;
 				//	FreeImage_GetPixelIndex(fbmp,ix,height()-iy-1,&index);
 				//	dot_getRaw(ix,iy) = aya::CColor(index);
-					int index = ix + (iy * width());
+					const size_t index = ix + (iy * width());
 					dot_getRaw(ix,iy) = aya::CColor(img_bufferBMP.at(index));
 				}
 			}

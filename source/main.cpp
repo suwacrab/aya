@@ -451,7 +451,7 @@ static void disp_usage() {
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 		"\t.AGM specifics:\n"
-		"\t\tformats: i4,i8,rgb8\n"
+		"\t\tformats: i4,i8,rgb\n"
 
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
