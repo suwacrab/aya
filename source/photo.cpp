@@ -36,8 +36,8 @@ namespace aya {
 
 		if(!paletted) {
 		//	fbmp = FreeImage_ConvertTo32Bits(fbmp);
-			std::puts("unhandled");
-			std::exit(-1);
+		//	std::puts("unhandled");
+		//	std::exit(-1);
 		}
 
 		/*if(!fbmp) {
@@ -58,18 +58,18 @@ namespace aya {
 		clear(aya::CColor());
 
 		if(!paletted) {
-			/*RGBQUAD fclr;
-			for(int iy=0; iy<height(); iy++) {
-				for(int ix=0; ix<width(); ix++) {
-					FreeImage_GetPixelColor(fbmp,ix,height()-iy-1,&fclr);
-					dot_getRaw(ix,iy) = aya::CColor(
-						fclr.rgbReserved,
-						fclr.rgbRed,
-						fclr.rgbGreen,
-						fclr.rgbBlue
-					);
+			if(state.info_raw.colortype == LCT_PALETTE) {
+				std::printf("aya::CPhoto::CPhoto(fname,pal): unhandled: have to do palette -> RGB conversion\n");
+				std::exit(-1);
+			} else {
+				for(int i=0; i<img_bufferBMP.size(); i += 4) {
+					int r = img_bufferBMP.at(i + 0);
+					int g = img_bufferBMP.at(i + 1);
+					int b = img_bufferBMP.at(i + 2);
+					int a = img_bufferBMP.at(i + 3);
+					m_bmpdata.at(i/4) = aya::CColor(a,r,g,b);
 				}
-			}*/
+			}
 		} else {
 			//RGBQUAD* src_pal = FreeImage_GetPalette(fbmp);
 			if(state.info_raw.colortype != LCT_PALETTE) {
@@ -502,6 +502,37 @@ namespace aya {
 			}
 			default: {
 				puts("aya::CPhoto::convert_rawAGI(fmt): error: format not supported ^^;");
+				std::exit(-1);
+				break;
+			}
+		}
+
+		return blob_bmp;
+	}
+	auto CPhoto::convert_rawHGI(int format) const -> Blob {
+		auto format_id = hourai_graphfmt::getID(format);
+		Blob blob_bmp;
+
+		switch(format_id) {
+			case hourai_graphfmt::i2: {
+				for(int iy=0; iy<height(); iy++) {
+					for(int ix=0; ix<width(); ix += 8) {
+						uint8_t plane0 = 0;
+						uint8_t plane1 = 0;
+						for(int o=0; o<8; o++) {
+							auto dot = dot_get(ix+o,iy).a & 3;
+							plane0 |= (dot&1) << (7-o);
+							plane1 |= (dot>>1) << (7-o);
+						}
+						
+						blob_bmp.write_u8(plane0);
+						blob_bmp.write_u8(plane1);
+					}
+				}		
+				break;
+			}
+			default: {
+				puts("aya::CPhoto::convert_rawHGI(): error: format not supported ^^;");
 				std::exit(-1);
 				break;
 			}

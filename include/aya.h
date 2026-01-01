@@ -23,8 +23,11 @@ namespace aya {
 	struct ALICE_AGAFILE_HEADER;
 	struct ALICE_AGAFILE_FRAME;
 	struct ALICE_AGAFILE_SUBFRAME;
-	struct ALICE_AGMFILE_HEADER;
 	struct ALICE_AGIFILE_HEADER;
+	struct ALICE_AGMFILE_HEADER;
+
+	struct HOURAI_HGIFILE_HEADER;
+	struct HOURAI_HGMFILE_HEADER;
 
 	namespace patchu_graphfmt {
 		enum {
@@ -83,6 +86,15 @@ namespace aya {
 			return (id >= 0) && (id < len);
 		}
 	};
+	namespace hourai_graphfmt {
+		enum { i2,len };
+		auto getBPP(int format) -> int;
+		constexpr auto getID(int format) -> int { return format & 0xFF; }
+		constexpr auto isValid(int format) -> bool {
+			auto id = getID(format);
+			return (id >= 0) && (id < len);
+		}
+	};
 
 	struct CNarumiNGAConvertInfo {
 		std::string filename_json;
@@ -120,6 +132,18 @@ namespace aya {
 		bool verbose;
 	};
 	struct CAliceAGMConvertInfo {
+		bool do_compress;
+		int format;
+		bool verbose;
+	};
+	struct CHouraiHGIConvertInfo {
+		bool do_compress;
+		int format;
+		int subimage_xsize,subimage_ysize;
+		int attribute_bank;
+		bool verbose;
+	};
+	struct CHouraiHGMConvertInfo {
 		bool do_compress;
 		int format;
 		bool verbose;
@@ -237,6 +261,29 @@ struct aya::ALICE_AGIFILE_HEADER {
 	uint32_t offset_paletsection;
 	uint32_t offset_bmpsection;
 };
+struct aya::HOURAI_HGIFILE_HEADER {
+	char magic[4];
+	int16_t width,height;
+	int16_t subimage_width,subimage_height;
+	uint16_t subimage_count;
+	uint16_t subimage_size;
+	uint16_t palet_size;
+	uint16_t bitmap_size;
+	uint16_t offset_paletsection;
+	uint16_t offset_bmpsection;
+};
+struct aya::HOURAI_HGMFILE_HEADER {
+	char magic[4];
+	int16_t width_chr,height_chr;
+	int16_t width_dot,height_dot;
+	uint16_t palet_size;
+	uint16_t map_size;
+	uint16_t bitmap_size;
+	uint16_t offset_paletsection;
+	uint16_t offset_mapsection;
+	uint16_t offset_attrsection;
+	uint16_t offset_bmpsection;
+};
 
 struct aya::CColor {
 	uint8_t a,r,g,b;
@@ -301,6 +348,8 @@ class aya::CPhoto {
 		auto hash_get(int flip) const -> uint64_t;
 		auto hash_getIndexed(int flip) const -> uint64_t;
 
+		auto convert_fileHGI(const CHouraiHGIConvertInfo &info) -> Blob;
+		auto convert_fileHGM(const CHouraiHGMConvertInfo &info) -> Blob;
 		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
 		auto convert_fileAGI(const CAliceAGIConvertInfo &info) -> Blob;
 		auto convert_fileAGM(const CAliceAGMConvertInfo &info) -> Blob;
@@ -311,6 +360,7 @@ class aya::CPhoto {
 		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
 		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> Blob;
 		auto convert_raw(int format) const -> Blob;
+		auto convert_rawHGI(int format) const -> Blob;
 		auto convert_rawAGI(int format) const -> Blob;
 		auto convert_rawPGI(int format) const -> Blob;
 		auto convert_rawNGI(int format) const -> Blob;

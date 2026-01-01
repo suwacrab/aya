@@ -50,6 +50,9 @@ int main(int argc,const char* argv[]) {
 	int param_agi_subimageX = 0;
 	int param_agi_subimageY = 0;
 
+	int param_hgi_subimageX = 0;
+	int param_hgi_subimageY = 0;
+
 	int pixelfmt_flags = 0xFF;
 
 	std::string param_exportpal_filename;
@@ -130,6 +133,12 @@ int main(int argc,const char* argv[]) {
 		param_agi_subimageY = std::stoi(argparser.arg_get("-agi_subimage",2).at(2));
 	}
 
+	// HGI-specific
+	if(argparser.arg_isValid("-hgi_subimage",2)) {
+		param_hgi_subimageX = std::stoi(argparser.arg_get("-hgi_subimage",2).at(1));
+		param_hgi_subimageY = std::stoi(argparser.arg_get("-hgi_subimage",2).at(2));
+	}
+
 	if(do_showusage) {
 		disp_usage();
 		std::exit(0);
@@ -194,6 +203,9 @@ int main(int argc,const char* argv[]) {
 		{"i4",aya::alice_graphfmt::i4},
 		{"i8",aya::alice_graphfmt::i8},
 		{"rgb",aya::alice_graphfmt::rgb},
+	};
+	static const std::map<std::string,int> pixelformat_table_hourai = {
+		{"i2",aya::hourai_graphfmt::i2}
 	};
 
 	if(param_filetype == "mgi") {
@@ -402,6 +414,56 @@ int main(int argc,const char* argv[]) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
+	}
+	else if(param_filetype == "hgi") {
+		/* get format -----------------------------------*/
+		const auto& pixelformat_table = pixelformat_table_hourai;
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CHouraiHGIConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.subimage_xsize = param_hgi_subimageX,
+			.subimage_ysize = param_hgi_subimageY,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileHGI(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
+	else if(param_filetype == "hgm") {
+		/* get format -----------------------------------*/
+		const auto& pixelformat_table = pixelformat_table_hourai;
+		if(pixelformat_table.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table.at(param_pixelfmt);
+
+		auto pic = aya::CPhoto(param_srcfile,do_palette);
+		auto info = (aya::CHouraiHGMConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.verbose = do_verbose
+		};
+		auto pic_blob = pic.convert_fileHGM(info);
+		if(!pic_blob.send_file(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
 	} 
 	else {
 		std::printf("aya: error: unknown output filetype '%s'\n",param_filetype.c_str());
@@ -452,10 +514,15 @@ static void disp_usage() {
 		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 		"\t.AGM specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
+		"\t.HGM specifics:\n"
+		"\t\tformats: i2\n"
+		"\t.AGI specifics:\n"
+		"\t\tformats: i2\n"
+		"\t\t-hgi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 
 	);
 	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: aga, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
+	std::printf("\tavailable filetypes: hgi, hgm, aga, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 

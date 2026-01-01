@@ -43,4 +43,9 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 clean:
 	rm -rf build/*.o build/*.d $(OUTPUT)
+clean_bin:
+	rm -rf $(OUTPUT)
+
+rebuild: clean .WAIT all
+soft_rebuild: clean_bin .WAIT all
 

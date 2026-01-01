@@ -98,6 +98,20 @@ auto aya::alice_graphfmt::getBPP(int format) -> int {
 	}
 	return bpp;
 }
+auto aya::hourai_graphfmt::getBPP(int format) -> int {
+	auto format_id = hourai_graphfmt::getID(format);
+	if(!hourai_graphfmt::isValid(format)) {
+		puts("imgconv::hourai_graphfmt_getBPP(fmt): error: invalid format");
+		std::exit(-1);
+	}
+
+	int bpp = 0;
+	switch(format_id) {
+		case hourai_graphfmt::i2: { bpp = 2; break; }
+		default: break;
+	}
+	return bpp;
+}
 
 auto aya::version_get() -> CAyaVersion {
 	std::string build_date(__DATE__);
