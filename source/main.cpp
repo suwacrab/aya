@@ -521,7 +521,7 @@ static void disp_usage() {
 		"\t\t-hgi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 
 	);
-	std::printf("\taya graphic converter ver. %s\n",aya_ver.build_date.c_str());
+	std::printf("\t%s\n",aya_ver.build_date.c_str());
 	std::printf("\tavailable filetypes: hgi, hgm, aga, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 

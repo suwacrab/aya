@@ -114,7 +114,9 @@ auto aya::hourai_graphfmt::getBPP(int format) -> int {
 }
 
 auto aya::version_get() -> CAyaVersion {
-	std::string build_date(__DATE__);
+	std::string build_date("aya graphic converter");
+	build_date += " ver. ";
+	build_date += __DATE__;
 	build_date += " ";
 	build_date += __TIME__;
 
