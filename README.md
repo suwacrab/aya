@@ -333,9 +333,9 @@ The `format` field for the following structures is defined as such:
 ### GB Image Formats
 ---
 
-HGM files are used for storing backgrounds. They each contain a background
-tilemap, tilemap attributes (used for GBC software), a palette, and bitmap
-data.
+HGI files are bitmaps that contain one, static image. Optionally, their bitmap
+data may be stored split into multiple sub-images. (e.g for fonts, image
+atlases, etc.)
 
 ```
 *   header section
@@ -354,9 +354,9 @@ data.
 	0x00 | char[]    | bitmap data
 ```
 
-HGI files are bitmaps that contain one, static image. Optionally, their bitmap
-data may be stored split into multiple sub-images. (e.g for fonts, image
-atlases, etc.)
+HGM files are used for storing backgrounds. They each contain a background
+tilemap, tilemap attributes (used for GBC software), a palette, and bitmap
+data.
 
 ```
 *   header section
@@ -373,6 +373,8 @@ atlases, etc.)
 *	palette section
 	0x00 | short[]   | palette data
 *	map section
+	0x00 | short[]   | map data
+*	attribute section
 	0x00 | short[]   | map data
 *	bitmap section
 	0x00 | char[]    | bitmap data
