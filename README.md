@@ -341,8 +341,11 @@ For example, if you had the bytes:
 the pixel data would be the following color indices:
 
 ```txt
-01230123
+32103210
 ```
+
+Just as mentioned earlier, since bits are reversed, it'd be `32103210`, not
+`01230123`.
 
 ### GB Image Formats
 ---
