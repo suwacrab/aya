@@ -74,7 +74,9 @@ Each subimage has an X/Y coordinate that's used from offsetting them from the
 animation's origin. This is useful if you want to hardcode an image's center
 without having to alter your code.
 
-Setting said offset is done via the `nga_useroffset` option.
+Setting the offset of each subframe is done via the `nga_useroffset` option.
+For example, to offset your animation to the upper-left by 16 horizontal pixels
+and 8 vertical pixels, `-nga_useroffset 16 8`.
 
 ### Usage notes: .AGA
 ---
@@ -84,6 +86,8 @@ animation's origin. This is useful if you want to hardcode an image's center
 without having to alter your code.
 
 Setting the offset of each subframe is done via the `aga_useroffset` option.
+For example, to offset your animation to the upper-left by 16 horizontal pixels
+and 8 vertical pixels, `-aga_useroffset 16 8`.
 
 ---
 # Format specification
@@ -392,7 +396,7 @@ data.
 *	map section
 	0x00 | short[]   | map data
 *	attribute section
-	0x00 | short[]   | map data
+	0x00 | short[]   | map attribute data
 *	bitmap section
 	0x00 | char[]    | bitmap data
 ```
