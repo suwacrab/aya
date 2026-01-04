@@ -30,13 +30,17 @@ make clean && make all
 # Usage
 ---
 
+To convert the image file `<source image>`, and `-o`utput it to the file
+`<output file>`, you would use the following command:
+
 ```
 aya -i <source image> -o <output file> <options>
 ```
 
-Use `aya` on it's own to view all the available options.
+Use `aya` on its own without any additional parameters to view all the
+available options.
 
-Example: converting a 4bpp aseprite JSON+.PNG to a .NGA file:
+Example: converting a 4bpp aseprite JSON+.PNG to a .NGA animation file:
 
 ```
 aya -p -fmt nga i4 -i animation.png -o animation.nga -nga_json animation.json
@@ -214,18 +218,21 @@ NGM files contain graphics, palette, and a tilemap.
 
 The `format` field for the following structures is defined as such:
 
--	`0`: I4 / 16-color graphics
--	`1`: I8 / 256-color graphics
--	`2`: rgb / 32,768-color graphics
+-	`0`: I4 / 16-color graphics. Each byte contains the left pixel as the low
+    nybble, and the right pixel as the high nybble.
+-	`1`: I8 / 256-color graphics. Each byte corresponds to one pixel.
+-	`2`: rgb / 32,768-color graphics. Each `uint16` corresponds to one pixel,
+    in the format XBBBBBGGGGGRRRRR.
 
 ### GBA Image Formats
 ---
 
-AGA files contain sprite animations. In structure, they're a bit similar to .NGA
-files. That is, they contain:
+AGA files contain sprite animations. In structure, they're a bit similar to
+.NGA files. That is, they contain:
 
 -	frames, which store animation metadata (animation frame durations)
--	subframes, which each correspond to one hardware GBA sprite. Each frame consists of zero (if blank) or more subframes.
+-	subframes, which each correspond to one hardware GBA sprite. Each frame
+    consists of zero (if blank) or more subframes.
 -	palette data, which stores the colors the frames will use.
 -	bitmap data, which is the 16-color or 256-color characters for each frame.
 
@@ -265,7 +272,8 @@ files. That is, they contain:
 -	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
 -	`***`: The character number gets incremented by the character count for each object. That is, if it were a 8-frame 8x8 sprite, subframe 0 would have character number 0, subframe 1 would have charnum 1...
 
-AGM files contain a background map, it's palette, and it's bitmap data.
+AGM files are used for storing backgrounds. They each contain a background
+tilemap, a palette, and bitmap data.
 
 ```
 *	header section
@@ -287,9 +295,9 @@ AGM files contain a background map, it's palette, and it's bitmap data.
 	0x00 | char[]    | bitmap data
 ```
 
-AGI files are bitmaps that contain one, static image. Optionally,
-their bitmap data may be stored split into multiple sub-images. (e.g for fonts,
-image atlases, etc.)
+AGI files are bitmaps that contain one, static image. Optionally, their bitmap
+data may be stored split into multiple sub-images. (e.g for fonts, image
+atlases, etc.)
 
 ```
 *	header section
