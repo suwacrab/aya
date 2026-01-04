@@ -328,7 +328,21 @@ The `format` field for the following structures is defined as such:
 -	`0`: I2 / 4-color graphics. Graphics are bitplaned; they're paired in
     groups of 2 bytes, with each 2 bytes corresponding to a row of pixels. The
     first byte is bits 0 of each pixel, and the second byte is bits 1 of each
+    pixel. Bits are reversed, so the LSB of each byte is actually the rightmost
     pixel.
+
+For example, if you had the bytes:
+
+```txt
+0b01010101
+0b00110011
+```
+
+the pixel data would be the following color indices:
+
+```txt
+01230123
+```
 
 ### GB Image Formats
 ---
