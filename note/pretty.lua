@@ -127,6 +127,31 @@ local ls_agi_header = {
 	{ 'bitmap section offset','int' };
 }
 
+local ls_hgi_header = {
+	{ 'header ("HGI\\0")','char',4 };
+	{ 'bitmap dimensions (X,Y)', 'short', 2 };
+	{ 'sub-image dimensions','short', 2 };
+	{ 'sub-image count', 'short' };
+	{ 'size of each sub-image', 'short' };
+	{ 'palette section size', 'short' };
+	{ 'bitmap section size', 'short' };
+	{ 'palette section offset','short' };
+	{ 'bitmap section offset','short' };
+}
+local ls_hgm_header = {
+	{ 'header ("HGM\\0")','char',4 };
+	{ 'image dimensions (characters)','short',2 };
+	{ 'image dimensions (dots)','short',2 };
+	{ 'palette size','short' };
+	{ 'map size','short' };
+	{ 'bitmap size','short' };
+	{ 'palette section offset','short' };
+	{ 'map section offset','short' };
+	{ 'attribute section offset','short' };
+	{ 'bitmap section offset','short' };
+}
+
+
 local printf = function(str,...) print(str:format(...)) end
 
 local function print_flist(fl)
@@ -174,8 +199,10 @@ print_flist(ls_ngm_map)
 print_flist(ls_aga_header)
 print_flist(ls_aga_frame)
 print_flist(ls_aga_subframe)
-print_flist(ls_agm_header)]]
-print_flist(ls_agi_header)
+print_flist(ls_agm_header)
+print_flist(ls_agi_header)]]
+print_flist(ls_hgi_header)
+print_flist(ls_hgm_header)
 
 end
 

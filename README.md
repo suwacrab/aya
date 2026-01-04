@@ -13,6 +13,9 @@ available formats:
 	*	`.AGA`: Used for 2D animations.
 	*	`.AGI`: Used for static 2D images.
 	*	`.AGM`: Used for storing tilemaps.
+-	GBC:
+    *   `.HGI`: Used for static 2D images.
+    *   `.HGM`: Used for storing tilemaps.
 
 ---
 # Building
@@ -313,6 +316,64 @@ atlases, etc.)
 	0x20 | int       | bitmap section offset
 *	palette section
 	0x00 | short[]   | palette data
+*	bitmap section
+	0x00 | char[]    | bitmap data
+```
+
+### GB Pixel Formats
+---
+
+The `format` field for the following structures is defined as such:
+
+-	`0`: I2 / 4-color graphics. Graphics are bitplaned; they're paired in
+    groups of 2 bytes, with each 2 bytes corresponding to a row of pixels. The
+    first byte is bits 0 of each pixel, and the second byte is bits 1 of each
+    pixel.
+
+### GB Image Formats
+---
+
+HGM files are used for storing backgrounds. They each contain a background
+tilemap, tilemap attributes (used for GBC software), a palette, and bitmap
+data.
+
+```
+*   header section
+    0x00 | char[4]   | header ("HGI\0")
+    0x04 | short[2]  | bitmap dimensions (X,Y)
+    0x08 | short[2]  | sub-image dimensions
+    0x0C | short     | sub-image count
+    0x0E | short     | size of each sub-image
+    0x10 | short     | palette section size
+    0x12 | short     | bitmap section size
+    0x14 | short     | palette section offset
+    0x16 | short     | bitmap section offset
+*   palette section
+	0x00 | short[]   | palette data
+*   bitmap section
+	0x00 | char[]    | bitmap data
+```
+
+HGI files are bitmaps that contain one, static image. Optionally, their bitmap
+data may be stored split into multiple sub-images. (e.g for fonts, image
+atlases, etc.)
+
+```
+*   header section
+    0x00 | char[4]   | header ("HGM\0")
+    0x04 | short[2]  | image dimensions (characters)
+    0x08 | short[2]  | image dimensions (dots)
+    0x0C | short     | palette size
+    0x0E | short     | map size
+    0x10 | short     | bitmap size
+    0x12 | short     | palette section offset
+    0x14 | short     | map section offset
+    0x16 | short     | attribute section offset
+    0x18 | short     | bitmap section offset
+*	palette section
+	0x00 | short[]   | palette data
+*	map section
+	0x00 | short[]   | map data
 *	bitmap section
 	0x00 | char[]    | bitmap data
 ```
