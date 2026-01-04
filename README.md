@@ -5,7 +5,7 @@ available formats:
 -	PC (mostly unused): `.PGA`, `.PGI`
 -	Dreamcast (mostly unused, as of now): `.MGI`
 -	Saturn:
-	*	Assume all data is big-endian.
+	*	**⚠️ Assume all data is big-endian!**
 	*	`.NGA`: Used for 2D animations.
 	*	`.NGI`: Used for static 2D images.
 	*	`.NGM`: Used for storing tilemaps.
@@ -13,7 +13,7 @@ available formats:
 	*	`.AGA`: Used for 2D animations.
 	*	`.AGI`: Used for static 2D images.
 	*	`.AGM`: Used for storing tilemaps.
--	GBC:
+-	GB/GBC:
     *   `.HGI`: Used for static 2D images.
     *   `.HGM`: Used for storing tilemaps.
 
@@ -21,13 +21,22 @@ available formats:
 # Building
 ---
 
-Requires clang & zlib
+Requires clang & zlib.
 
 to build:
 
+```bash
+make rebuild
 ```
-make clean && make all
+
+If your PC has the threads for it, you may instead compile faster using 4
+threads via:
+
+```bash
+make rebuild -j4 --output-sync
 ```
+
+Adjust `-j4` depending on how much threads you want to use.
 
 ---
 # Usage
