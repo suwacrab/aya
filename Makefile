@@ -36,10 +36,10 @@ $(OUTPUT): $(OBJS)
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	$(C) $(CFLAGS) -c $< -o $@
+	ccache $(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	ccache $(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -rf build/*.o build/*.d $(OUTPUT)

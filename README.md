@@ -102,7 +102,9 @@ and 8 vertical pixels, `-aga_useroffset 16 8`.
 # Format specification
 ---
 
-Expect all the formats' specifications to be changing rapidly.
+Expect all the formats' specifications to be changing rapidly. Each file is
+separated into multiple sections, and you can access them by using the section
+offsets in each file's header.
 
 ### Saturn Pixel Formats
 ---
