@@ -2,7 +2,7 @@
 CXX	:= clang++
 CC	:= clang
 
-CBASEFLAGS	:= -MD -O2
+CBASEFLAGS	:= -MMD -MP -O2
 CBASEFLAGS	+= -Wall -Wshadow -Werror
 CBASEFLAGS	+= -Iinclude -I./deps/scl/include
 
