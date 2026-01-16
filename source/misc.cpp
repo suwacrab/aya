@@ -6,8 +6,8 @@
 #define TWIDOUT(x, y) ( TWIDTAB((y)) | (TWIDTAB((x)) << 1) )
 #define MIN(a, b) ( (a)<(b)? (a):(b) )
 
-auto aya::compress(Blob& srcblob, bool do_compress) -> Blob {
-	return srcblob.compress(do_compress);
+auto aya::compress(scl::blob& srcblob, bool do_compress) -> scl::blob {
+	return srcblob.compress_raw(do_compress);
 }
 auto aya::conv_po2(int n) -> int {
 	int power = 1;

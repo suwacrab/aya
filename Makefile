@@ -4,11 +4,11 @@ CC	:= clang
 
 CBASEFLAGS	:= -MD -O2
 CBASEFLAGS	+= -Wall -Wshadow -Werror
-CBASEFLAGS	+= -Iinclude
+CBASEFLAGS	+= -Iinclude -I./deps/scl/include
 
 CFLAGS := $(CBASEFLAGS)
 
-CXXFLAGS := -std=c++17
+CXXFLAGS := -std=c++23
 CXXFLAGS += $(CBASEFLAGS)
 CXXFLAGS += -Wnull-dereference
 

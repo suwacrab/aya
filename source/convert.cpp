@@ -143,13 +143,13 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 }
 
 // conversion ---------------------------------------------------------------@/
-auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> Blob {
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_framesection;
-	Blob blob_tilesection;
-	Blob blob_bmpsection;
-	Blob blob_paletsection;
+auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> scl::blob {
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_framesection;
+	scl::blob blob_tilesection;
+	scl::blob blob_bmpsection;
+	scl::blob blob_paletsection;
 	rapidjson::Document jsondoc;
 
 	std::vector<PGAWorkingFrame> frame_info_wrking;
@@ -327,7 +327,7 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 
 	// create palette -----------------------------------@/
 	if(aya::patchu_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		for(int p=0; p<256; p++) {
 			palet_get(p).write_argb8(palet_blob);
 		}
@@ -360,8 +360,8 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	out_blob.write_blob(blob_paletsection);
 	return out_blob;
 }
-auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> Blob {
-	Blob out_blob;
+auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> scl::blob {
+	scl::blob out_blob;
 	
 	int width_po2 = aya::conv_po2(width());
 	int height_po2 = aya::conv_po2(height());
@@ -372,8 +372,8 @@ auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> Blob {
 
 	// generate bitmap ----------------------------------@/
 	size_t bmpsize_orig = 0;
-	Blob blob_bmp; {
-		Blob temp_bmp;
+	scl::blob blob_bmp; {
+		scl::blob temp_bmp;
 
 		auto raw_bmp = convert_raw(format);
 		temp_bmp.write_blob(raw_bmp);
@@ -386,9 +386,9 @@ auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> Blob {
 
 	// generate palette ---------------------------------@/
 	size_t palsize_orig = 0;
-	Blob blob_palette;
+	scl::blob blob_palette;
 	if(bpp <= 8) {
-		Blob temp_pal;
+		scl::blob temp_pal;
 		size_t palet_size = 256;
 		if(bpp == 4) palet_size = 16;
 		for(int pen=0; pen<palet_size; pen++) {
@@ -425,9 +425,9 @@ auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> Blob {
 	out_blob.write_blob(blob_bmp);
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
+auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> scl::blob {
 	bool do_twiddle = marisa_graphfmt::isTwiddled(format);
-	Blob out_blob;
+	scl::blob out_blob;
 	
 	int width_po2 = aya::conv_po2(width());
 	int height_po2 = aya::conv_po2(height());
@@ -443,8 +443,8 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
 
 	// generate bitmap ----------------------------------@/
 	size_t bmpsize_orig = 0;
-	Blob blob_bmp; {
-		Blob temp_bmp;
+	scl::blob blob_bmp; {
+		scl::blob temp_bmp;
 
 		if(do_twiddle) {
 			auto twiddled_bmp = newpic.convert_twiddled(format);
@@ -462,9 +462,9 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
 
 	// generate palette ---------------------------------@/
 	size_t palsize_orig = 0;
-	Blob blob_palette;
+	scl::blob blob_palette;
 	if(bpp <= 8) {
-		Blob temp_pal;
+		scl::blob temp_pal;
 		size_t palet_size = 256;
 		if(bpp == 4) palet_size = 16;
 		for(int pen=0; pen<palet_size; pen++) {
@@ -501,8 +501,8 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> Blob {
 	out_blob.write_blob(blob_bmp);
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blob {
-//	int format, const std::string& json_filename, bool do_compress) -> Blob {
+auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> scl::blob {
+//	int format, const std::string& json_filename, bool do_compress) -> scl::blob {
 	
 	// validate info struct -----------------------------@/
 	const int format = info.format;
@@ -513,13 +513,13 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 	const int useroffset_y = info.useroffset_y;
 
 	// setup frame list ---------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_framesection;
-	Blob blob_subframesection;
-	Blob blob_paletsection;
-	Blob blob_bmpsection;
-	Blob blob_bmpsection_real;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_framesection;
+	scl::blob blob_subframesection;
+	scl::blob blob_paletsection;
+	scl::blob blob_bmpsection;
+	scl::blob blob_bmpsection_real;
 
 	aya::CWorkingFrameList framelist;
 	framelist.create_fromAseJSON(*this,filename_json);
@@ -592,7 +592,7 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 
 	// create palette -----------------------------------@/
 	if(aya::narumi_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_sat(palet_blob,true);
@@ -607,7 +607,7 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 
 	// fix up bmp section -------------------------------@/
 	blob_bmpsection_real.write_str("CEL"); {
-		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
+		scl::blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
 		blob_bmpsection_real.write_blob(bmpblobComp);
@@ -641,7 +641,7 @@ auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> Blo
 	out_blob.write_blob(blob_bmpsection_real);
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const bool do_compress = info.do_compress;
@@ -668,11 +668,11 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 	}
 
 	// setup bitmap info --------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_bmpsection;
-	Blob blob_bmpsection_real;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_bmpsection;
+	scl::blob blob_bmpsection_real;
 
 	const int pad_size = 0x800;
 	int subimage_count = 0;
@@ -710,7 +710,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 
 	// create palette -----------------------------------@/
 	if(aya::narumi_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_sat(palet_blob,true);
@@ -725,7 +725,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 
 	// fix up bmp section -------------------------------@/
 	blob_bmpsection_real.write_str("CEL"); {
-		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
+		scl::blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
 		blob_bmpsection_real.write_blob(bmpblobComp);
@@ -763,7 +763,7 @@ auto aya::CPhoto::convert_fileNGI(const aya::CNarumiNGIConvertInfo& info) -> Blo
 
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const bool do_compress = info.do_compress;
@@ -796,13 +796,13 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	const int map_height = height() / 8;
 
 	// setup bitmap info --------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_mapsection;
-	Blob blob_mapsection_real;
-	Blob blob_bmpsection;
-	Blob blob_bmpsection_real;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_mapsection;
+	scl::blob blob_mapsection_real;
+	scl::blob blob_bmpsection;
+	scl::blob blob_bmpsection_real;
 
 	// write section headers ----------------------------@/
 	// bmp & map section's header is written later, though!
@@ -838,9 +838,9 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 					found_used = true;
 					
 					if(info.verbose) {
-						auto get_tileXY = [=](int idx, int &x, int &y) {
-							x = 8 * (idx % (width()/8));
-							y = 8 * (idx / (width()/8));
+						auto get_tileXY = [&](int idx, int &x, int &y) {
+							x = 8 * (idx % (this->width()/8));
+							y = 8 * (idx / (this->width()/8));
 						};
 						
 						int orig_index = imghash_mapRealIdx[hash];
@@ -889,7 +889,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 
 	// create palette -----------------------------------@/
 	if(aya::narumi_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		int color_count = 1 << aya::narumi_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_sat(palet_blob,false);
@@ -906,14 +906,14 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 	blob_mapsection_real.write_str("CHP"); {
 		blob_mapsection_real.write_be_u16(map_width);
 		blob_mapsection_real.write_be_u16(map_height);
-		Blob mapblobComp = aya::compress(blob_mapsection,do_compress);
+		scl::blob mapblobComp = aya::compress(blob_mapsection,do_compress);
 		blob_mapsection_real.write_be_u32(blob_mapsection.size());
 		blob_mapsection_real.write_be_u32(mapblobComp.size());
 		blob_mapsection_real.write_blob(mapblobComp);
 	}
 
 	blob_bmpsection_real.write_str("CEL"); {
-		Blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
+		scl::blob bmpblobComp = aya::compress(blob_bmpsection,do_compress);
 		blob_bmpsection_real.write_be_u32(blob_bmpsection.size());
 		blob_bmpsection_real.write_be_u32(bmpblobComp.size());
 		blob_bmpsection_real.write_blob(bmpblobComp);
@@ -956,7 +956,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> Blo
 
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const std::string filename_json = info.filename_json;
@@ -966,12 +966,12 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	const int lenient_count = info.lenient_count;
 
 	// setup frame list ---------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_framesection;
-	Blob blob_subframesection;
-	Blob blob_paletsection;
-	Blob blob_bmpsection;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_framesection;
+	scl::blob blob_subframesection;
+	scl::blob blob_paletsection;
+	scl::blob blob_bmpsection;
 
 	aya::CWorkingFrameList framelist;
 	framelist.create_fromAseJSON(*this,filename_json);
@@ -1232,7 +1232,7 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> Blob
 	out_blob.write_blob(blob_bmpsection);
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 
@@ -1258,10 +1258,10 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> Blob
 	}
 
 	// setup bitmap info --------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_bmpsection;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_bmpsection;
 
 	constexpr int header_size = 56;
 	int subimage_count = 0;
@@ -1323,7 +1323,7 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> Blob
 
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 
@@ -1338,11 +1338,11 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob
 
 	int subimage_count = 0;
 
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_mapsection;
-	Blob blob_bmpsection;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_mapsection;
+	scl::blob blob_bmpsection;
 
 	// write frames -------------------------------------@/
 	auto imagetable = rect_split(8,8); {
@@ -1372,9 +1372,9 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob
 					found_used = true;
 					
 					if(info.verbose) {
-						auto get_tileXY = [=](int idx, int &x, int &y) {
-							x = 8 * (idx % (width()/8));
-							y = 8 * (idx / (width()/8));
+						auto get_tileXY = [&](int idx, int &x, int &y) {
+							x = 8 * (idx % (this->width()/8));
+							y = 8 * (idx / (this->width()/8));
 						};
 						
 						int orig_index = imghash_mapRealIdx[hash];
@@ -1422,7 +1422,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob
 
 	// create palette -----------------------------------@/
 	if(aya::alice_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_agb(blob_paletsection);
@@ -1479,7 +1479,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> Blob
 
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileHGI(const aya::CHouraiHGIConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileHGI(const aya::CHouraiHGIConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 
@@ -1505,10 +1505,10 @@ auto aya::CPhoto::convert_fileHGI(const aya::CHouraiHGIConvertInfo& info) -> Blo
 	}
 
 	// setup bitmap info --------------------------------@/
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_bmpsection;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_bmpsection;
 
 	constexpr int header_size = 64;
 	int subimage_count = 0;
@@ -1570,7 +1570,7 @@ auto aya::CPhoto::convert_fileHGI(const aya::CHouraiHGIConvertInfo& info) -> Blo
 
 	return out_blob;
 }
-auto aya::CPhoto::convert_fileHGM(const aya::CHouraiHGMConvertInfo& info) -> Blob {
+auto aya::CPhoto::convert_fileHGM(const aya::CHouraiHGMConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 
@@ -1585,12 +1585,12 @@ auto aya::CPhoto::convert_fileHGM(const aya::CHouraiHGMConvertInfo& info) -> Blo
 
 	int subimage_count = 0;
 
-	Blob out_blob;
-	Blob blob_headersection;
-	Blob blob_paletsection;
-	Blob blob_mapsection;
-	Blob blob_attrsection;
-	Blob blob_bmpsection;
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_mapsection;
+	scl::blob blob_attrsection;
+	scl::blob blob_bmpsection;
 
 	// write frames -------------------------------------@/
 	auto imagetable = rect_split(8,8); {
@@ -1620,9 +1620,9 @@ auto aya::CPhoto::convert_fileHGM(const aya::CHouraiHGMConvertInfo& info) -> Blo
 					found_used = true;
 					
 					if(info.verbose) {
-						auto get_tileXY = [=](int idx, int &x, int &y) {
-							x = 8 * (idx % (width()/8));
-							y = 8 * (idx / (width()/8));
+						auto get_tileXY = [&](int idx, int &x, int &y) {
+							x = 8 * (idx % (this->width()/8));
+							y = 8 * (idx / (this->width()/8));
 						};
 						
 						int orig_index = imghash_mapRealIdx[hash];
@@ -1672,7 +1672,7 @@ auto aya::CPhoto::convert_fileHGM(const aya::CHouraiHGMConvertInfo& info) -> Blo
 
 	// create palette -----------------------------------@/
 	if(aya::hourai_graphfmt::getBPP(format) <= 8) {
-		Blob palet_blob;
+		scl::blob palet_blob;
 		int color_count = 1 << aya::hourai_graphfmt::getBPP(format);
 		for(int p=0; p<color_count; p++) {
 			palet_get(p).write_rgb5a1_agb(blob_paletsection);

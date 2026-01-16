@@ -1,6 +1,7 @@
 #pragma once
 
-#include <blob.h>
+#define SCL_USE_ZLIB
+#include <scl/container/blob.hpp>
 #include <string>
 #include <memory>
 #include <array>
@@ -150,7 +151,7 @@ namespace aya {
 	};
 
 	auto conv_po2(int n) -> int;
-	auto compress(Blob& srcblob, bool do_compress = true) -> Blob;
+	auto compress(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
 	auto version_get() -> CAyaVersion;
 	auto twiddled_index(int x, int y, int w, int h) -> size_t;
 	auto twiddled_index4b(int x, int y, int w, int h) -> size_t;
@@ -287,13 +288,13 @@ struct aya::HOURAI_HGMFILE_HEADER {
 
 struct aya::CColor {
 	uint8_t a,r,g,b;
-	void write_alpha(Blob& out_blob) const;
-	void write_argb8(Blob& out_blob) const;
-	void write_rgb565(Blob& out_blob) const;
-	void write_rgb5a1(Blob& out_blob,int test = 254) const;
-	void write_rgb5a1_sat(Blob& out_blob,bool msb) const;
-	void write_rgb5a1_agb(Blob& out_blob,bool msb = false) const;
-	void write_argb4(Blob& out_blob) const;
+	void write_alpha(scl::blob& out_blob) const;
+	void write_argb8(scl::blob& out_blob) const;
+	void write_rgb565(scl::blob& out_blob) const;
+	void write_rgb5a1(scl::blob& out_blob,int test = 254) const;
+	void write_rgb5a1_sat(scl::blob& out_blob,bool msb) const;
+	void write_rgb5a1_agb(scl::blob& out_blob,bool msb = false) const;
+	void write_argb4(scl::blob& out_blob) const;
 
 	constexpr auto rawdata() const -> uint32_t {
 		return ((uint32_t)(a)<<24) | 
@@ -348,23 +349,23 @@ class aya::CPhoto {
 		auto hash_get(int flip) const -> uint64_t;
 		auto hash_getIndexed(int flip) const -> uint64_t;
 
-		auto convert_fileHGI(const CHouraiHGIConvertInfo &info) -> Blob;
-		auto convert_fileHGM(const CHouraiHGMConvertInfo &info) -> Blob;
-		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> Blob;
-		auto convert_fileAGI(const CAliceAGIConvertInfo &info) -> Blob;
-		auto convert_fileAGM(const CAliceAGMConvertInfo &info) -> Blob;
-		auto convert_fileMGI(int format, bool do_compress = true) -> Blob;
-		auto convert_filePGI(int format, bool do_compress = true) -> Blob;
-		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> Blob;
-		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> Blob;
-		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> Blob;
-		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> Blob;
-		auto convert_raw(int format) const -> Blob;
-		auto convert_rawHGI(int format) const -> Blob;
-		auto convert_rawAGI(int format) const -> Blob;
-		auto convert_rawPGI(int format) const -> Blob;
-		auto convert_rawNGI(int format) const -> Blob;
-		auto convert_twiddled(int format) const -> Blob;
+		auto convert_fileHGI(const CHouraiHGIConvertInfo &info) -> scl::blob;
+		auto convert_fileHGM(const CHouraiHGMConvertInfo &info) -> scl::blob;
+		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> scl::blob;
+		auto convert_fileAGI(const CAliceAGIConvertInfo &info) -> scl::blob;
+		auto convert_fileAGM(const CAliceAGMConvertInfo &info) -> scl::blob;
+		auto convert_fileMGI(int format, bool do_compress = true) -> scl::blob;
+		auto convert_filePGI(int format, bool do_compress = true) -> scl::blob;
+		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> scl::blob;
+		auto convert_fileNGA(const CNarumiNGAConvertInfo &info) -> scl::blob;
+		auto convert_fileNGI(const CNarumiNGIConvertInfo &info) -> scl::blob;
+		auto convert_fileNGM(const CNarumiNGMConvertInfo &info) -> scl::blob;
+		auto convert_raw(int format) const -> scl::blob;
+		auto convert_rawHGI(int format) const -> scl::blob;
+		auto convert_rawAGI(int format) const -> scl::blob;
+		auto convert_rawPGI(int format) const -> scl::blob;
+		auto convert_rawNGI(int format) const -> scl::blob;
+		auto convert_twiddled(int format) const -> scl::blob;
 
 		CPhoto();
 		CPhoto(std::string filename,bool paletted = false, bool opaque_pal=false);

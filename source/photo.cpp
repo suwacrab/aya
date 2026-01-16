@@ -327,9 +327,9 @@ namespace aya {
 		return hash;
 	}
 
-	auto CPhoto::convert_rawPGI(int format) const -> Blob {
+	auto CPhoto::convert_rawPGI(int format) const -> scl::blob {
 		auto format_id = patchu_graphfmt::getID(format);
-		Blob blob_bmp;
+		scl::blob blob_bmp;
 
 		switch(format_id) {
 			case patchu_graphfmt::i8: {
@@ -381,9 +381,9 @@ namespace aya {
 
 		return blob_bmp;
 	}
-	auto CPhoto::convert_raw(int format) const -> Blob {
+	auto CPhoto::convert_raw(int format) const -> scl::blob {
 		auto format_id = marisa_graphfmt::getID(format);
-		Blob blob_bmp;
+		scl::blob blob_bmp;
 
 		switch(format_id) {
 			case marisa_graphfmt::i8: {
@@ -427,9 +427,9 @@ namespace aya {
 
 		return blob_bmp;
 	}
-	auto CPhoto::convert_rawNGI(int format) const -> Blob {
+	auto CPhoto::convert_rawNGI(int format) const -> scl::blob {
 		auto format_id = narumi_graphfmt::getID(format);
-		Blob blob_bmp;
+		scl::blob blob_bmp;
 
 		switch(format_id) {
 			case narumi_graphfmt::i4: {
@@ -468,9 +468,9 @@ namespace aya {
 
 		return blob_bmp;
 	}
-	auto CPhoto::convert_rawAGI(int format) const -> Blob {
+	auto CPhoto::convert_rawAGI(int format) const -> scl::blob {
 		auto format_id = alice_graphfmt::getID(format);
-		Blob blob_bmp;
+		scl::blob blob_bmp;
 
 		switch(format_id) {
 			case alice_graphfmt::i4: {
@@ -509,9 +509,9 @@ namespace aya {
 
 		return blob_bmp;
 	}
-	auto CPhoto::convert_rawHGI(int format) const -> Blob {
+	auto CPhoto::convert_rawHGI(int format) const -> scl::blob {
 		auto format_id = hourai_graphfmt::getID(format);
-		Blob blob_bmp;
+		scl::blob blob_bmp;
 
 		switch(format_id) {
 			case hourai_graphfmt::i2: {
@@ -540,10 +540,10 @@ namespace aya {
 
 		return blob_bmp;
 	}
-	auto CPhoto::convert_twiddled(int format) const -> Blob {
+	auto CPhoto::convert_twiddled(int format) const -> scl::blob {
 		auto format_id = marisa_graphfmt::getID(format);
-		Blob blob_output;
-		Blob blob_curdot;
+		scl::blob blob_output;
+		scl::blob blob_curdot;
 
 		// bitmap writing fns ---------------------------@/
 		switch(format_id) {
@@ -569,8 +569,8 @@ namespace aya {
 					for(int ix=0; ix<width(); ix++) {
 						const auto index = dot_getTwiddledIdx(ix,iy);
 						dot_getRawC(ix,iy).write_alpha(blob_curdot);
-						bmpbuf[index] = *blob_curdot.data<uint8_t>();
-						blob_curdot.reset();
+						bmpbuf[index] = *blob_curdot.data<uint8_t*>();
+						blob_curdot.clear();
 					}
 				}
 				blob_output.write_raw(bmpbuf.data(),dimensions());
@@ -582,8 +582,8 @@ namespace aya {
 					for(int ix=0; ix<width(); ix++) {
 						const auto index = dot_getTwiddledIdx(ix,iy);
 						dot_getRawC(ix,iy).write_rgb565(blob_curdot);
-						bmpbuf[index] = *blob_curdot.data<uint16_t>();
-						blob_curdot.reset();
+						bmpbuf[index] = *blob_curdot.data<uint16_t*>();
+						blob_curdot.clear();
 					}
 				}
 				blob_output.write_raw(bmpbuf.data(),dimensions() * sizeof(uint16_t));
@@ -595,8 +595,8 @@ namespace aya {
 					for(int ix=0; ix<width(); ix++) {
 						const auto index = dot_getTwiddledIdx(ix,iy);
 						dot_getRawC(ix,iy).write_rgb5a1(blob_curdot);
-						bmpbuf[index] = *blob_curdot.data<uint16_t>();
-						blob_curdot.reset();
+						bmpbuf[index] = *blob_curdot.data<uint16_t*>();
+						blob_curdot.clear();
 					}
 				}
 				blob_output.write_raw(bmpbuf.data(),dimensions() * sizeof(uint16_t));
@@ -608,8 +608,8 @@ namespace aya {
 					for(int ix=0; ix<width(); ix++) {
 						const auto index = dot_getTwiddledIdx(ix,iy);
 						dot_getRawC(ix,iy).write_argb4(blob_curdot);
-						bmpbuf[index] = *blob_curdot.data<uint16_t>();
-						blob_curdot.reset();
+						bmpbuf[index] = *blob_curdot.data<uint16_t*>();
+						blob_curdot.clear();
 					}
 				}
 				blob_output.write_raw(bmpbuf.data(),dimensions() * sizeof(uint16_t));

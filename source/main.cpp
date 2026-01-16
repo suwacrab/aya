@@ -3,8 +3,9 @@
 #include <map>
 
 #include <aya.h>
-#include <blob.h>
 #include <argparse.h>
+
+#include <scl/container/blob.hpp>
 
 static void disp_usage();
 
@@ -165,14 +166,14 @@ int main(int argc,const char* argv[]) {
 	if(!param_exportpal_filename.empty()) {
 		//auto pal_format = param_exportpal_format;
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
-		Blob pal_blob;
+		scl::blob pal_blob;
 		for(int i=0; i<256; i++) {
 			pal_blob.write_u8(pic.palet_get(i).r);
 			pal_blob.write_u8(pic.palet_get(i).g);
 			pal_blob.write_u8(pic.palet_get(i).b);
 		}
 		// quick-export 
-		if(!pal_blob.send_file(param_exportpal_filename)) {
+		if(!pal_blob.file_send(param_exportpal_filename)) {
 			std::printf("aya: error: unable to write to file %s\n",param_exportpal_filename.c_str());
 			std::exit(-1);
 		}
@@ -222,7 +223,7 @@ int main(int argc,const char* argv[]) {
 		
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_fileMGI(pixelfmt_flags, do_compress);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -240,7 +241,7 @@ int main(int argc,const char* argv[]) {
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_filePGI(pixelfmt_flags, do_compress);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -258,7 +259,7 @@ int main(int argc,const char* argv[]) {
 
 		auto pic = aya::CPhoto(param_srcfile,do_palette);
 		auto pic_blob = pic.convert_filePGA(pixelfmt_flags, param_pga_json, do_compress);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -284,7 +285,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGA(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -309,7 +310,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGI(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -333,7 +334,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileNGM(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -360,7 +361,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileAGA(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -386,7 +387,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileAGI(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -410,7 +411,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileAGM(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -436,7 +437,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileHGI(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
@@ -460,7 +461,7 @@ int main(int argc,const char* argv[]) {
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileHGM(info);
-		if(!pic_blob.send_file(param_outfile)) {
+		if(!pic_blob.file_send(param_outfile)) {
 			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
 			std::exit(-1);
 		}
