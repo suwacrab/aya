@@ -50,6 +50,7 @@ int main(int argc,const char* argv[]) {
 
 	int param_agi_subimageX = 0;
 	int param_agi_subimageY = 0;
+	bool param_agi_splitcel = false;
 
 	int param_hgi_subimageX = 0;
 	int param_hgi_subimageY = 0;
@@ -132,6 +133,9 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-agi_subimage",2)) {
 		param_agi_subimageX = std::stoi(argparser.arg_get("-agi_subimage",2).at(1));
 		param_agi_subimageY = std::stoi(argparser.arg_get("-agi_subimage",2).at(2));
+	}
+	if(argparser.arg_isValid("-agi_splitcel")) {
+		param_agi_splitcel = true;
 	}
 
 	// HGI-specific
@@ -384,6 +388,7 @@ int main(int argc,const char* argv[]) {
 			.format = pixelfmt_flags,
 			.subimage_xsize = param_agi_subimageX,
 			.subimage_ysize = param_agi_subimageY,
+			.split_cels = param_agi_splitcel,
 			.verbose = do_verbose
 		};
 		auto pic_blob = pic.convert_fileAGI(info);
@@ -517,7 +522,7 @@ static void disp_usage() {
 		"\t\tformats: i4,i8,rgb\n"
 		"\t.HGM specifics:\n"
 		"\t\tformats: i2\n"
-		"\t.AGI specifics:\n"
+		"\t.HGI specifics:\n"
 		"\t\tformats: i2\n"
 		"\t\t-hgi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
 

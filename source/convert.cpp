@@ -1271,9 +1271,19 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl:
 	if(use_subimage) {
 		auto imagetable = rect_split(subimage_xsize,subimage_ysize);
 		for(auto pic : imagetable) {
-			auto bmpblob = pic->convert_rawAGI(format);
-			blob_bmpsection.write_blob(bmpblob);
-			subimage_datasize = bmpblob.size();
+			if(info.split_cels) {
+				auto celtable = pic->rect_split(8,8);
+				for(auto cel : celtable) {
+					auto bmpblob = cel->convert_rawAGI(format);
+					blob_bmpsection.write_blob(bmpblob);
+					subimage_datasize = bmpblob.size();
+					subimage_count++;
+				}
+			} else {
+				auto bmpblob = pic->convert_rawAGI(format);
+				blob_bmpsection.write_blob(bmpblob);
+				subimage_datasize = bmpblob.size();
+			}
 		}
 	} else {
 		// write bitmap data ----------------------------@/

@@ -130,6 +130,7 @@ namespace aya {
 		bool do_compress;
 		int format;
 		int subimage_xsize,subimage_ysize;
+		bool split_cels;
 		bool verbose;
 	};
 	struct CAliceAGMConvertInfo {
