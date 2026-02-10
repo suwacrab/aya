@@ -518,6 +518,7 @@ static void disp_usage() {
 		"\t.AGI specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
+		"\t\t-agi_splitcel           divides each subimage into cels\n"
 		"\t.AGM specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t.HGM specifics:\n"
