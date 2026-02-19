@@ -57,7 +57,7 @@ auto aya::CWorkingFrameList::frame_get(size_t index) -> aya::CWorkingFrame& {
 	}
 	return m_frames.at(index);
 }
-auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename) -> void {
+auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename, CWorkingFrameCreateInfo createinfo) -> void {
 	m_frames.clear();
 	rapidjson::Document jsondoc;
 
@@ -101,6 +101,7 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 
 	const int num_frames = jsondoc["frames"].Size();
 
+	std::vector<aya::CWorkingFrame> framebuf;
 	for(int i=0; i<num_frames; i++) {
 		auto& src_frame = jsondoc["frames"][i];
 		int duration_ms = src_frame["duration"].GetInt();
@@ -138,7 +139,172 @@ auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const st
 		frame.m_durationMS = duration_ms;
 		frame.m_durationFrame = duration_frame;
 		frame.m_subframes.push_back(aya::CWorkingSubframe(sheetframe,0,0));
-		m_frames.push_back(frame);
+		framebuf.push_back(frame);
+	}
+
+	m_frames = framebuf;
+}
+
+aya::CAGBSubframe::CAGBSubframe() {
+	m_posX = 0;
+	m_posY = 0;
+	m_agbSizeID = -1;
+	m_agbShapeID = -1;
+}
+aya::CAGBSubframeList::CAGBSubframeList() {
+	m_subframes.clear();
+}
+aya::CAGBSubframeList::CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count) {
+	m_subframes.clear();
+	/*
+	 * divide each subframe into AGB subframes.
+	 * before we can do that, we need a used-tile grid to know which areas
+	 * of the image are empty. after that, we build a list of coordinates
+	 * and sizes for each image.
+	*/
+
+	if(basephoto.width()%8 != 0 || basephoto.height()%8 != 0) {
+		std::puts("aya::CAGBSubframeList::CAGBSubframeList(): error: subimage x/y size must be multiple of 8!!");
+		std::exit(-1);
+	}
+
+	// setup tile grid ----------------------------------@/
+	auto subframe_tiles = basephoto.rect_split(8,8);
+	const int grid_width = basephoto.width()/8;
+	const int grid_height = basephoto.height()/8;
+	const int grid_area = grid_width * grid_height;
+	std::vector<bool> emptygrid;
+	std::vector<bool> usedgrid;
+	emptygrid.resize(grid_area,false);
+	usedgrid.resize(grid_area,false);
+
+	enum AGBShape {
+		AGBShape_Square,
+		AGBShape_Hori,
+		AGBShape_Vert
+	};
+	struct UsableSize { int x,y; };
+
+	const std::array<UsableSize,12> AGBSizes {{
+		{ 1,1 }, { 2,1 }, { 4,1 },
+		{ 1,2 }, { 2,2 }, { 4,2 },
+		{ 1,4 }, { 2,4 }, { 4,4 }, { 8,4 },
+		                  { 4,8 }, { 8,8 }
+	}};
+	const std::array<int,12> AGBShapes {
+		AGBShape_Square,  AGBShape_Hori,    AGBShape_Hori,
+		AGBShape_Vert,    AGBShape_Square,  AGBShape_Hori,
+		AGBShape_Vert,    AGBShape_Vert,    AGBShape_Square, AGBShape_Hori,
+		                                    AGBShape_Vert,   AGBShape_Square
+	};
+	const std::array<int,12> AGBSizeIDs {
+		0,  0,  1,
+		0,  1,  2,
+		1,  2,  2,  3,
+		        3,  3
+	};
+
+	for(int i=0; i<grid_area; i++) {
+		auto tile = subframe_tiles.at(i);
+		if(tile->all_equals(aya::CColor())) {
+			emptygrid.at(i) = true;
+		}
+	}
+
+	auto usedgrid_get = [&](int x, int y) {
+		return usedgrid.at(x + y * grid_width);
+	};
+	auto emptygrid_get = [&](int x, int y) {
+		return emptygrid.at(x + y * grid_width);
+	};
+	auto tilegrid_get = [&](int x, int y) {
+		return subframe_tiles.at(x + y * grid_width);
+	};
+
+
+	// add subframes ------------------------------------@/
+	for(int iy=0; iy<grid_height; iy++) {
+		for(int ix=0; ix<grid_width; ix++) {
+			// check largest rectangle that can be used
+			int largest_area = 0;
+			size_t largest_areaIdx = 0;
+			for(int i=0; i<AGBSizes.size(); i++) {
+				const auto& size = AGBSizes.at(i);
+				int area = size.x * size.y;
+				if(largest_area > area) continue;
+				if(iy + size.y > grid_height) continue;
+				if(ix + size.x > grid_width) continue;
+
+				// break out if anything in range is marked as used
+				int num_empty = 0;
+				bool area_usable = true;
+				for(int y=0; y<size.y; y++) {
+					for(int x=0; x<size.x; x++) {
+						if(usedgrid_get(x+ix,y+iy)) {
+							area_usable = false;
+							break;
+						}
+						if(emptygrid_get(x+ix,y+iy)) {
+							num_empty++;
+						}
+						if(num_empty > lenient_count) {
+							area_usable = false;
+							break;
+						}
+					}
+					if(!area_usable) break;
+				}
+				if(!area_usable) continue;
+				largest_area = area;
+				largest_areaIdx = i;
+			}
+
+			if(largest_area == 0) continue; // means no rect was found
+			const auto& sizeentry = AGBSizes.at(largest_areaIdx);
+			const int size_x = sizeentry.x;
+			const int size_y = sizeentry.y;
+		//	const size_t bmp_tileOffset = blob_bmpsection.size();
+		//	const size_t bmp_tileNum = bmp_tileOffset / 32;
+
+			// if all the tiles are empty, leave.
+			int tiles_allEmpty = true;
+			for(int y=0; y<size_y; y++) {
+				for(int x=0; x<size_x; x++) {
+					// mark area as used
+					auto tile = tilegrid_get(x+ix,y+iy);
+					if(!tile->all_equals(aya::CColor())) {
+						tiles_allEmpty = false;
+						break;
+					}
+				}
+			}
+			if(tiles_allEmpty) continue;
+
+			// write subframe 
+			for(int y=0; y<size_y; y++) {
+				for(int x=0; x<size_x; x++) {
+					// mark area as used
+					usedgrid_get(x+ix,y+iy) = true;
+				}
+			}
+			
+			aya::CPhoto subframe_photo(size_x*8,size_y*8);
+			basephoto.rect_blit(subframe_photo,
+				ix*8,iy*8,
+				0,0,
+				size_x*8,size_y*8
+			);
+			aya::CAGBSubframe subframe;
+			subframe.m_photo = subframe_photo;
+			subframe.m_posX = ix*8;
+			subframe.m_posY = iy*8;
+			subframe.m_sizeX = subframe_photo.width();
+			subframe.m_sizeY = subframe_photo.height();
+			subframe.m_agbSizeID = AGBSizeIDs.at(largest_areaIdx);
+			subframe.m_agbShapeID = AGBShapes.at(largest_areaIdx);
+
+			m_subframes.push_back(subframe);
+		}
 	}
 }
 
@@ -994,162 +1160,52 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> scl:
 		for(int sf=0; sf<wrkframe.subframe_count(); sf++) {
 			auto subframe = wrkframe.subframe_get(sf);
 			auto subframe_photo = subframe.photo();
-			if(subframe_photo.width()%8 != 0 || subframe_photo.height()%8 != 0) {
-				std::puts("aya::CPhoto::convert_fileNGI(): error: subimage X size must be multiple of 8!!");
-				std::exit(-1);
-			}
 			if(subframe_photo.all_equals(aya::CColor())) {
 				continue;
 			}
 
-			// setup tile grid --------------------------@/
-			auto subframe_tiles = subframe_photo.rect_split(8,8);
-			const int grid_width = subframe_photo.width()/8;
-			const int grid_height = subframe_photo.height()/8;
-			const int grid_area = grid_width * grid_height;
-			std::vector<bool> emptygrid;
-			std::vector<bool> usedgrid;
-			emptygrid.resize(grid_area,false);
-			usedgrid.resize(grid_area,false);
+			// split original subframe into multiple ----@/
+			auto agb_subframeList = CAGBSubframeList(subframe_photo,lenient_count);
+			for(auto agb_subframe : agb_subframeList.m_subframes) {
+				const size_t bmp_tileOffset = blob_bmpsection.size();
+				const size_t bmp_tileNum = bmp_tileOffset / 32;
 
-			enum AGBShape {
-				AGBShape_Square,
-				AGBShape_Hori,
-				AGBShape_Vert
-			};
-			struct UsableSize { int x,y; };
-			const std::array<UsableSize,12> AGBSizes {{
-				{ 1,1 }, { 2,1 }, { 4,1 },
-				{ 1,2 }, { 2,2 }, { 4,2 },
-				{ 1,4 }, { 2,4 }, { 4,4 }, { 8,4 },
-				                  { 4,8 }, { 8,8 }
-			}};
-			const std::array<int,12> AGBShapes {
-				AGBShape_Square,	AGBShape_Hori,		AGBShape_Hori,
-				AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
-				AGBShape_Vert,		AGBShape_Vert,		AGBShape_Square,	AGBShape_Hori,
-														AGBShape_Vert,		AGBShape_Square
-			};
-			const std::array<int,12> AGBSizeIDs {
-				0,	0,	1,
-				0,	1,	2,
-				1,	2,	2,	3,
-						3,	3
-			};
-
-			for(int i=0; i<grid_area; i++) {
-				auto tile = subframe_tiles.at(i);
-				if(tile->all_equals(aya::CColor())) {
-					emptygrid.at(i) = true;
+				// convert cels -------------------------@/
+				auto subframe_cels = agb_subframe.photo().rect_split(8,8);
+				int num_cels = 0;
+				for(auto cel : subframe_cels) {
+					auto bmpblob = cel->convert_rawAGI(format);
+					fileframe.bmp_size += bmpblob.size();
+					blob_bmpsection.write_blob(bmpblob);
+					num_cels++;
 				}
+
+				// create attribute ---------------------@/
+				int attr_bpp = 0;
+				if(aya::alice_graphfmt::getBPP(format) == 8) {
+					attr_bpp = 1;
+				}
+				int attr = 
+					(agb_subframe.m_agbShapeID << 6) |
+					(attr_bpp << 5) |
+					(agb_subframe.m_agbSizeID << 14);
+
+				// create file subframe -----------------@/
+				aya::ALICE_AGAFILE_SUBFRAME filesubframe = {};
+				filesubframe.pos_x = agb_subframe.m_posX - useroffset_x;
+				filesubframe.pos_y = agb_subframe.m_posY - useroffset_y;
+				filesubframe.attr = attr;
+				filesubframe.charnum = bmp_tileNum;
+				filesubframe.size_xy = 
+					(agb_subframe.m_sizeX) |
+					(agb_subframe.m_sizeY) << 8;
+				filesubframe.charcnt = num_cels;
+
+				subframestruct_table.push_back(filesubframe);
+				fileframe.subframe_len++;
 			}
 
-			auto usedgrid_get = [&](int x, int y) {
-				return usedgrid.at(x + y * grid_width);
-			};
-			auto emptygrid_get = [&](int x, int y) {
-				return emptygrid.at(x + y * grid_width);
-			};
-			auto tilegrid_get = [&](int x, int y) {
-				return subframe_tiles.at(x + y * grid_width);
-			};
-
-			// get tiles --------------------------------@/
-			for(int iy=0; iy<grid_height; iy++) {
-				for(int ix=0; ix<grid_width; ix++) {
-					// check largest rectangle that can be used
-					int largest_area = 0;
-					size_t largest_areaIdx = 0;
-					for(int i=0; i<AGBSizes.size(); i++) {
-						const auto& size = AGBSizes.at(i);
-						int area = size.x * size.y;
-						if(largest_area > area) continue;
-						if(iy + size.y > grid_height) continue;
-						if(ix + size.x > grid_width) continue;
-
-						// break out if anything in range is marked as used
-						int num_empty = 0;
-						bool area_usable = true;
-						for(int y=0; y<size.y; y++) {
-							for(int x=0; x<size.x; x++) {
-								if(usedgrid_get(x+ix,y+iy)) {
-									area_usable = false;
-									break;
-								}
-								if(emptygrid_get(x+ix,y+iy)) {
-									num_empty++;
-								}
-								if(num_empty > lenient_count) {
-									area_usable = false;
-									break;
-								}
-							}
-							if(!area_usable) break;
-						}
-						if(!area_usable) continue;
-						largest_area = area;
-						largest_areaIdx = i;
-					}
-
-					if(largest_area == 0) continue; // means no rect was found
-					const auto& sizeentry = AGBSizes.at(largest_areaIdx);
-					const int size_x = sizeentry.x;
-					const int size_y = sizeentry.y;
-					const size_t bmp_tileOffset = blob_bmpsection.size();
-					const size_t bmp_tileNum = bmp_tileOffset / 32;
-
-					// if all the tiles are empty, leave.
-					int tiles_allEmpty = true;
-					for(int y=0; y<size_y; y++) {
-						for(int x=0; x<size_x; x++) {
-							// mark area as used
-							auto tile = tilegrid_get(x+ix,y+iy);
-							if(!tile->all_equals(aya::CColor())) {
-								tiles_allEmpty = false;
-								break;
-							}
-						}
-					}
-					if(tiles_allEmpty) continue;
-
-					// write tile
-					int num_chars = 0;
-					for(int y=0; y<size_y; y++) {
-						for(int x=0; x<size_x; x++) {
-						// mark area as used
-							usedgrid_get(x+ix,y+iy) = true;
-							auto tile = tilegrid_get(x+ix,y+iy);
-							auto bmpblob = tile->convert_rawAGI(format);
-							fileframe.bmp_size += bmpblob.size();
-							blob_bmpsection.write_blob(bmpblob);
-							num_chars++;
-						}
-					}
-					
-					int attr_bpp = 0;
-					if(aya::alice_graphfmt::getBPP(format) == 8) {
-						attr_bpp = 1;
-					}
-					int attr = 
-						(AGBShapes.at(largest_areaIdx) << 6) |
-						(attr_bpp << 5) |
-						(AGBSizeIDs.at(largest_areaIdx) << 14);
-
-					aya::ALICE_AGAFILE_SUBFRAME filesubframe = {};
-					filesubframe.pos_x = (ix*8) - useroffset_x;
-					filesubframe.pos_y = (iy*8) - useroffset_y;
-					filesubframe.attr = attr;
-					filesubframe.charnum = bmp_tileNum;
-					filesubframe.size_xy = 
-						(size_x*8) |
-						(size_y*8) << 8;
-					filesubframe.charcnt = num_chars;
-
-					subframestruct_table.push_back(filesubframe);
-					fileframe.subframe_len++;
-				}
-			}
-
+			// print verbose output ---------------------@/
 			if(info.verbose) {
 				printf("subframe[%d][%d]: (%4d,%4d)\n",
 					f,sf,

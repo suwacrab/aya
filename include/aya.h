@@ -13,6 +13,8 @@ namespace aya {
 	class CWorkingFrame;
 	class CWorkingSubframe;
 	class CWorkingFrameList;
+	class CAGBSubframe;
+	class CAGBSubframeList;
 
 	struct MARISA_MGIFILE_HEADER;
 	struct PATCHU_PGIFILE_HEADER;
@@ -150,12 +152,26 @@ namespace aya {
 		int format;
 		bool verbose;
 	};
+	struct CWorkingFrameCreateInfo {
+		public:
+			bool is_agb;
+
+			CWorkingFrameCreateInfo() : is_agb(false) {}
+	};
 
 	auto conv_po2(int n) -> int;
 	auto compress(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
 	auto version_get() -> CAyaVersion;
 	auto twiddled_index(int x, int y, int w, int h) -> size_t;
 	auto twiddled_index4b(int x, int y, int w, int h) -> size_t;
+
+	namespace AGBShape {
+		enum {
+			Square,
+			Horizontal,
+			Vertical,
+		};
+	};
 };
 
 struct aya::MARISA_MGIFILE_HEADER {
@@ -402,12 +418,36 @@ class aya::CWorkingFrameList {
 	private:
 		std::vector<aya::CWorkingFrame> m_frames;
 	public:
-		auto create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename) -> void;
+		auto create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename, CWorkingFrameCreateInfo createinfo = {}) -> void;
 		
 		auto frame_get(size_t index) -> aya::CWorkingFrame&;
 		auto frame_count() const -> size_t { return m_frames.size(); }
 
 		CWorkingFrameList();
 		~CWorkingFrameList() {}
+};
+
+class aya::CAGBSubframe {
+	private:
+	public:
+		int m_posX,m_posY;
+		int m_sizeX,m_sizeY;
+		int m_agbSizeID;
+		int m_agbShapeID;
+		aya::CPhoto m_photo;
+
+		auto photo() -> aya::CPhoto& { return m_photo; }
+		
+		CAGBSubframe();
+		~CAGBSubframe() {}
+};
+class aya::CAGBSubframeList {
+	private:
+	public:
+		std::vector<aya::CAGBSubframe> m_subframes;
+
+	CAGBSubframeList();
+	CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count = 0);
+	~CAGBSubframeList() {}
 };
 
