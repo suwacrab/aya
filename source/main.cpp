@@ -10,8 +10,6 @@
 static void disp_usage();
 
 int main(int argc,const char* argv[]) {
-	// FreeImage_Initialise();
-
 	auto argparser = CArgParser(argc,argv);
 
 	if(!argparser.has_arguments()) {
@@ -370,6 +368,29 @@ int main(int argc,const char* argv[]) {
 			std::exit(-1);
 		}
 	} 
+	else if(param_filetype == "age") {
+		/* get format -----------------------------------*/
+		if(pixelformat_table_alice.count(param_pixelfmt) <= 0) {
+			std::printf("aya: error: unknown pixel format '%s'\nplease make sure the format's name is correct.\n",
+				param_pixelfmt.c_str()
+			);
+			std::exit(-1);
+		}
+
+		pixelfmt_flags = pixelformat_table_alice.at(param_pixelfmt);
+
+		auto info = (aya::CAliceAGEConvertInfo){
+			.do_compress = do_compress,
+			.format = pixelfmt_flags,
+			.lenient_count = param_aga_leniency,
+			.verbose = do_verbose
+		};
+		auto pic_blob = aya::convert_fileAGE(param_srcfile,info);
+		if(!pic_blob.file_send(param_outfile)) {
+			std::printf("aya: error: unable to write to file %s\n",param_outfile.c_str());
+			std::exit(-1);
+		}
+	} 
 	else if(param_filetype == "agi") {
 		/* get format -----------------------------------*/
 		const auto& pixelformat_table = pixelformat_table_alice;
@@ -475,8 +496,6 @@ int main(int argc,const char* argv[]) {
 		std::printf("aya: error: unknown output filetype '%s'\n",param_filetype.c_str());
 		std::exit(-1);
 	}
-
-	// FreeImage_DeInitialise();
 }
 
 static void disp_usage() {
@@ -515,6 +534,9 @@ static void disp_usage() {
 		"\t\t-aga_json <json>        specifies aseprite spritesheet .json to use\n"
 		"\t\t-aga_leniency <n>       if enabled, each object allows at least <n> empty characters\n"
 		"\t\t-aga_useroffset <x> <y> offsets each subframe by (x,y)\n"
+		"\t.AGE specifics:\n"
+		"\t\tformats: i4,i8,rgb\n"
+		"\t\tTakes in a .xml as its source file!\n"
 		"\t.AGI specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"
@@ -529,7 +551,7 @@ static void disp_usage() {
 
 	);
 	std::printf("\t%s\n",aya_ver.build_date.c_str());
-	std::printf("\tavailable filetypes: hgi, hgm, aga, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
+	std::printf("\tavailable filetypes: hgi, hgm, aga, age, agi, agm, mgi, pgi, pga, nga, ngi, ngm\n");
 };
 
 

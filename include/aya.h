@@ -26,6 +26,11 @@ namespace aya {
 	struct ALICE_AGAFILE_HEADER;
 	struct ALICE_AGAFILE_FRAME;
 	struct ALICE_AGAFILE_SUBFRAME;
+	struct ALICE_AGEFILE_HEADER;
+	struct ALICE_AGEFILE_LOADDESC;
+	struct ALICE_AGEFILE_ANIMBLOCK;
+	struct ALICE_AGEFILE_FRAME;
+	struct ALICE_AGEFILE_PART;
 	struct ALICE_AGIFILE_HEADER;
 	struct ALICE_AGMFILE_HEADER;
 
@@ -128,6 +133,13 @@ namespace aya {
 		int useroffset_x,useroffset_y;
 		bool verbose;
 	};
+	struct CAliceAGEConvertInfo {
+		bool do_compress;
+		int format;
+		int lenient_count;
+
+		bool verbose;
+	};
 	struct CAliceAGIConvertInfo {
 		bool do_compress;
 		int format;
@@ -159,6 +171,9 @@ namespace aya {
 			CWorkingFrameCreateInfo() : is_agb(false) {}
 	};
 
+
+	auto convert_fileAGE(const std::string& filename_xml, const CAliceAGEConvertInfo &info) -> scl::blob;
+
 	auto conv_po2(int n) -> int;
 	auto compress(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
 	auto version_get() -> CAyaVersion;
@@ -186,6 +201,7 @@ struct aya::MARISA_MGIFILE_HEADER {
 	uint32_t bmpdata_size_actual;
 	uint32_t bmpdata_offset;
 };
+
 struct aya::PATCHU_PGIFILE_HEADER {
 	char magic[4];
 	uint16_t width,height;
@@ -224,6 +240,7 @@ struct aya::PATCHU_PGAFILE_TILE {
 	uint16_t disp_x,disp_y;
 	uint32_t tile_sizex;
 };
+
 struct aya::ALICE_AGAFILE_HEADER {
 	char magic[4];
 	int16_t width,height;
@@ -255,6 +272,54 @@ struct aya::ALICE_AGAFILE_SUBFRAME {
 	uint16_t charcnt;
 	uint16_t size_xy; // x in lower byte, y in high byte
 };
+struct aya::ALICE_AGEFILE_HEADER {
+	char magic[4];
+	uint32_t format_flags;
+	uint32_t loaddesc_PB_idx;
+	uint32_t loaddesc_PB_count;
+	uint32_t loaddesc_PB_totalsize;
+	uint32_t animblock_count;
+	uint32_t offset_segLoaddesc;
+	uint32_t offset_segAnimblock;
+	uint32_t offset_segAnimblockNames;
+	uint32_t offset_segFrame;
+	uint32_t offset_segPart;
+	uint32_t offset_segBmp;
+	uint32_t offset_segPalet;
+};
+struct aya::ALICE_AGEFILE_LOADDESC {
+	// size and src_celOffset are / 32
+	uint16_t size;
+	uint16_t src_celOffset;
+};
+struct aya::ALICE_AGEFILE_ANIMBLOCK {
+	uint32_t loaddesc_PA_idx;
+	uint32_t loaddesc_PA_count;
+	uint32_t loaddesc_PA_totalsize;
+	uint16_t frame_idx;
+	uint16_t frame_count;
+};
+struct aya::ALICE_AGEFILE_FRAME {
+	uint32_t loaddesc_PF_idx;
+	uint32_t loaddesc_PF_count;
+	uint32_t loaddesc_PF_totalsize;
+	uint16_t delay;
+	uint16_t part_count;
+	uint16_t part_idx[4];
+};
+struct aya::ALICE_AGEFILE_PART {
+	// attr stores both attr1 data and attr2 data
+	// attr bits 12-15: same as attr 1 bits 12-15
+	// attr bits 5-7:   same as attr 0 bits 13-15
+	// attr bits 0-3:   palette idx
+	int16_t pos_x;
+	int16_t pos_y;
+	uint16_t attr;
+	uint16_t cel_idPF;
+	uint16_t cel_idPA;
+	uint16_t cel_idPB;
+	uint16_t size_xy;
+};
 struct aya::ALICE_AGMFILE_HEADER {
 	char magic[4];
 	int16_t width_chr,height_chr;
@@ -279,6 +344,7 @@ struct aya::ALICE_AGIFILE_HEADER {
 	uint32_t offset_paletsection;
 	uint32_t offset_bmpsection;
 };
+
 struct aya::HOURAI_HGIFILE_HEADER {
 	char magic[4];
 	int16_t width,height;

@@ -13,7 +13,7 @@ CXXFLAGS += $(CBASEFLAGS)
 CXXFLAGS += -Wnull-dereference
 
 #LDFLAGS	:= -lfreeimage -lz
-LDFLAGS	:= -lz
+LDFLAGS	:= -lz -ltinyxml
 
 # output
 OBJ_DIR := build

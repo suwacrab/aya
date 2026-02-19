@@ -1,6 +1,7 @@
 #include <aya.h>
 #include <functional>
 #include <rapidjson/document.h>
+#include <tinyxml.h>
 
 #include <cmath>
 #include <map>
@@ -591,6 +592,7 @@ auto aya::CPhoto::convert_filePGI(int format, bool do_compress) -> scl::blob {
 	out_blob.write_blob(blob_bmp);
 	return out_blob;
 }
+
 auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> scl::blob {
 	bool do_twiddle = marisa_graphfmt::isTwiddled(format);
 	scl::blob out_blob;
@@ -667,6 +669,7 @@ auto aya::CPhoto::convert_fileMGI(int format, bool do_compress) -> scl::blob {
 	out_blob.write_blob(blob_bmp);
 	return out_blob;
 }
+
 auto aya::CPhoto::convert_fileNGA(const aya::CNarumiNGAConvertInfo& info) -> scl::blob {
 //	int format, const std::string& json_filename, bool do_compress) -> scl::blob {
 	
@@ -1122,6 +1125,7 @@ auto aya::CPhoto::convert_fileNGM(const aya::CNarumiNGMConvertInfo& info) -> scl
 
 	return out_blob;
 }
+
 auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
@@ -1172,12 +1176,11 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> scl:
 
 				// convert cels -------------------------@/
 				auto subframe_cels = agb_subframe.photo().rect_split(8,8);
-				int num_cels = 0;
+				int num_cels = subframe_cels.size();
 				for(auto cel : subframe_cels) {
 					auto bmpblob = cel->convert_rawAGI(format);
 					fileframe.bmp_size += bmpblob.size();
 					blob_bmpsection.write_blob(bmpblob);
-					num_cels++;
 				}
 
 				// create attribute ---------------------@/
@@ -1287,6 +1290,80 @@ auto aya::CPhoto::convert_fileAGA(const aya::CAliceAGAConvertInfo& info) -> scl:
 	out_blob.write_blob(blob_paletsection);
 	out_blob.write_blob(blob_bmpsection);
 	return out_blob;
+}
+auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEConvertInfo& info) -> scl::blob {
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+	const int pad_word = 0xAA;
+
+	std::printf("loading from file %s\n",filename_xml.c_str());
+	TiXmlDocument xmldoc( filename_xml );
+	if(!xmldoc.LoadFile()) {
+		std::puts("aya::convert_fileAGE(): error: unable to load XML file");
+		std::exit(-1);
+	}
+	TiXmlHandle hXML(&xmldoc);
+
+	scl::blob blob_all;
+	scl::blob blob_segHeader;
+	scl::blob blob_segLoaddesc;
+	scl::blob blob_segAnimblock;
+	scl::blob blob_segAnimblockNames;
+	scl::blob blob_segFrame;
+	scl::blob blob_segPart;
+	scl::blob blob_segBmp;
+	scl::blob blob_segPalet;
+	
+	// setup animblock names ----------------------------@/
+	{
+		auto hElemBase = hXML.FirstChild("CCaptureData").FirstChild("Pattern");
+		
+		TiXmlElement* pElem = hElemBase.Element();
+
+		for(; pElem; pElem = pElem->NextSiblingElement()) {
+			auto hPattern = TiXmlHandle(pElem);
+			auto text = std::string(hPattern.FirstChild("Name").Element()->GetText());
+			blob_segAnimblockNames.write_str(text);
+			std::printf("got it (%s)\n",text.c_str());
+		}
+	}
+	std::puts("iterated thru");
+
+	// create header ------------------------------------@/
+	size_t header_size = 80;
+	size_t offset_segLoaddesc = header_size;
+	size_t offset_segAnimblock = offset_segLoaddesc + blob_segLoaddesc.size();
+	size_t offset_segAnimblockNames = offset_segAnimblock + blob_segAnimblock.size();
+	size_t offset_segFrame = offset_segAnimblockNames + blob_segAnimblockNames.size();
+	size_t offset_segPart = offset_segFrame + blob_segFrame.size();
+	size_t offset_segBmp = offset_segPart + blob_segPart.size();
+	size_t offset_segPalet = offset_segBmp + blob_segBmp.size();
+
+	aya::ALICE_AGEFILE_HEADER header = {};
+	header.magic[0] = 'A';
+	header.magic[1] = 'G';
+	header.magic[2] = 'E';
+	header.format_flags = format;
+	header.offset_segLoaddesc = offset_segLoaddesc;
+	header.offset_segAnimblock = offset_segAnimblock;
+	header.offset_segAnimblockNames = offset_segAnimblockNames;
+	header.offset_segFrame = offset_segFrame;
+	header.offset_segPart = offset_segPart;
+	header.offset_segBmp = offset_segBmp;
+	header.offset_segPalet = offset_segPalet;
+
+	blob_segHeader.write_raw(&header,sizeof(header));
+	blob_segHeader.pad(header_size,pad_word);
+
+	blob_all.write_blob(blob_segHeader);
+	blob_all.write_blob(blob_segLoaddesc);
+	blob_all.write_blob(blob_segAnimblock);
+	blob_all.write_blob(blob_segAnimblockNames);
+	blob_all.write_blob(blob_segFrame);
+	blob_all.write_blob(blob_segPart);
+	blob_all.write_blob(blob_segBmp);
+	blob_all.write_blob(blob_segPalet);
+	return blob_all;
 }
 auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
@@ -1545,6 +1622,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 
 	return out_blob;
 }
+
 auto aya::CPhoto::convert_fileHGI(const aya::CHouraiHGIConvertInfo& info) -> scl::blob {
 	// validate info struct -----------------------------@/
 	const int format = info.format;
