@@ -45,6 +45,8 @@ int main(int argc,const char* argv[]) {
 	int param_aga_useroffsetX = 0;
 	int param_aga_useroffsetY = 0;
 	int param_aga_leniency = 0;
+	
+	int param_age_leniency = 0;
 
 	int param_agi_subimageX = 0;
 	int param_agi_subimageY = 0;
@@ -125,6 +127,11 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-aga_leniency",1)) {
 		param_aga_leniency = std::stoi(argparser.arg_get("-aga_leniency",1).at(1));
+	}
+
+	// AGE-specific
+	if(argparser.arg_isValid("-age_leniency",1)) {
+		param_age_leniency = std::stoi(argparser.arg_get("-age_leniency",1).at(1));
 	}
 
 	// AGI-specific
@@ -382,7 +389,7 @@ int main(int argc,const char* argv[]) {
 		auto info = (aya::CAliceAGEConvertInfo){
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
-			.lenient_count = param_aga_leniency,
+			.lenient_count = param_age_leniency,
 			.verbose = do_verbose
 		};
 		auto pic_blob = aya::convert_fileAGE(param_srcfile,info);
@@ -537,6 +544,7 @@ static void disp_usage() {
 		"\t.AGE specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\tTakes in a .xml as its source file!\n"
+		"\t\t-age_leniency <n>       if enabled, each object allows at least <n> empty characters\n"
 		"\t.AGI specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-agi_subimage <x> <y>   divides image into subimages, each with size (x,y)\n"

@@ -1492,8 +1492,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	std::vector<size_t> part_tableCelOffset;
 	for(auto partphoto : edgeanim.m_photoList) {
 		part_tableCelOffset.push_back(numtotal_cels * 32);
-		constexpr int lenient_count = 1;
-		auto agb_subframeList = CAGBSubframeList(partphoto,lenient_count);
+		auto agb_subframeList = CAGBSubframeList(partphoto,info.lenient_count);
 		
 		std::vector<aya::ALICE_AGEFILE_PART> filepart_list;
 
