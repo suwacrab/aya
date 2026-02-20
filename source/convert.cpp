@@ -1491,6 +1491,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	size_t numtotal_cels = 0;
 	size_t numtotal_parts = 0;
 
+	size_t bmpsection_sizeOrig;
+
 	// load cels ----------------------------------------@/
 	std::vector<std::vector<aya::ALICE_AGEFILE_PART>> part_table;
 	std::vector<size_t> part_tableCelSize;
@@ -1637,6 +1639,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	}
 
 	// pad data -----------------------------------------@/
+	bmpsection_sizeOrig = blob_segBmp.size();
+
 	blob_segLoaddesc.pad(pad_size,pad_word);
 	blob_segPattern.pad(pad_size,pad_word);
 	blob_segStrings.pad(pad_size,pad_word);
@@ -1660,6 +1664,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	header.magic[1] = 'G';
 	header.magic[2] = 'E';
 	header.format_flags = format;
+	header.pattern_count = edgeanim.m_patterns.size();
 	header.offset_segLoaddesc = offset_segLoaddesc;
 	header.offset_segPattern = offset_segPattern;
 	header.offset_segStrings = offset_segStrings;
@@ -1667,6 +1672,10 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	header.offset_segPart = offset_segPart;
 	header.offset_segBmp = offset_segBmp;
 	header.offset_segPalet = offset_segPalet;
+
+	header.loaddesc_PB_idx = numtotal_loaddesc;
+	header.loaddesc_PB_count = 1;
+	header.loaddesc_PB_totalsize = bmpsection_sizeOrig / 32;
 
 	blob_segHeader.write_raw(&header,sizeof(header));
 	blob_segHeader.pad(header_size,pad_word);
