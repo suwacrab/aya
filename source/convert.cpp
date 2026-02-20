@@ -378,8 +378,8 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 				std::map<int,bool> frame_imgMap;
 
 				// get parts ----------------------------@/
-				TiXmlElement* pElemPart = hElemFrame.FirstChild("Part").Element();
-				for(; pElemPart; pElemPart = pElemPart->NextSiblingElement()) {
+				TiXmlElement* pElemPart = hElemFrame.LastChild("Part").Element();
+				for(; pElemPart; pElemPart = pElemPart->PreviousSiblingElement()) {
 					auto hElemPart = TiXmlHandle(pElemPart);
 					aya::CEdgeAnimPart part;
 
