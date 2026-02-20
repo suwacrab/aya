@@ -434,9 +434,9 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 					part.m_imgID = photoPartIdx;
 					frame.m_parts.push_back(part);
 
-					std::printf("\tadded part (imgid=%3d)\n",part.m_imgID);
+				//	std::printf("\tadded part (imgid=%3d)\n",part.m_imgID);
 				}
-				
+				/*
 				std::printf("added frame[%2zu]: delay=%3d, pos=(%3d,%3d), (%s)\n",
 					pattern.m_frames.size(),
 					frame.m_delayFrame,
@@ -444,11 +444,12 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 					frame_destpos.at(1),
 					frame.m_name.c_str()
 				);
+				*/
 				pattern.m_frames.push_back(frame);
 			}
 			
 			m_patterns.push_back(pattern);
-			std::printf("added pattern (%s)\n",pattern.m_name.c_str());
+			// std::printf("added pattern (%s)\n",pattern.m_name.c_str());
 		}
 	}
 	std::puts("iterated thru");
