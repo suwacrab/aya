@@ -309,6 +309,177 @@ aya::CAGBSubframeList::CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count
 	}
 }
 
+// edge animation -----------------------------------------------------------@/
+aya::CEdgeAnimPattern::CEdgeAnimPattern() {
+	m_name.clear();
+	m_usedPhotos.clear();
+	m_frames.clear();
+}
+
+aya::CEdgeAnim::CEdgeAnim() {
+	m_patterns.clear();
+	m_photoList.clear();
+}
+aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
+	// loading XML file ---------------------------------@/
+	std::printf("loading from file %s\n",filename_xml.c_str());
+	TiXmlDocument xmldoc( filename_xml );
+	if(!xmldoc.LoadFile()) {
+		std::puts("aya::CEdgeAnim::CEdgeAnim(): error: unable to load XML file");
+		std::exit(-1);
+	}
+	TiXmlHandle hXML(&xmldoc);
+
+	// misc. fns ----------------------------------------@/
+	auto intlist_parse = [&](const std::string& basetext) {
+		std::stringstream ss(basetext);
+		std::vector<std::string> list_str;
+		std::vector<int> list_num;
+
+		while(ss.good()) {
+			std::string substr;
+			std::getline(ss,substr,',');
+			list_str.push_back(substr);
+		}
+		for(auto str : list_str) {
+			list_num.push_back(std::stoi(str));
+		}
+
+		return list_num;
+	};
+
+	std::puts("xml loaded");
+
+	// setup patterns -----------------------------------@/
+	{
+		auto hElemBase = hXML.FirstChild("CCaptureData").FirstChild("Pattern");
+		
+		TiXmlElement* pElemPattern = hElemBase.Element();
+
+		for(; pElemPattern; pElemPattern = pElemPattern->NextSiblingElement()) {
+			auto hElemPattern = TiXmlHandle(pElemPattern);
+
+			aya::CEdgeAnimPattern pattern;
+			pattern.m_name = std::string(hElemPattern.FirstChild("Name").Element()->GetText());
+			
+			std::map<int,bool> pattern_imgMap;
+
+			// get frames -------------------------------@/
+			TiXmlElement* pElemFrame = hElemPattern.FirstChild("Frame").Element();
+			for(; pElemFrame; pElemFrame = pElemFrame->NextSiblingElement()) {
+				auto hElemFrame = TiXmlHandle(pElemFrame);
+				aya::CEdgeAnimFrame frame;
+
+				frame.m_name = std::string(hElemFrame.FirstChild("Name").Element()->GetText());
+				frame.m_delayFrame = std::stoi( std::string(hElemFrame.FirstChild("Delay").Element()->GetText()) );
+				auto frame_destposStr = std::string(hElemFrame.FirstChild("DestPos").Element()->GetText());
+				auto frame_destpos = intlist_parse( frame_destposStr );
+
+				std::map<int,bool> frame_imgMap;
+
+				// get parts ----------------------------@/
+				TiXmlElement* pElemPart = hElemFrame.FirstChild("Part").Element();
+				for(; pElemPart; pElemPart = pElemPart->NextSiblingElement()) {
+					auto hElemPart = TiXmlHandle(pElemPart);
+					aya::CEdgeAnimPart part;
+
+					// srcrect is x1,y1,x2,y2.
+					// it has to be converted to x,y,w,h.
+					auto srcrect_str = std::string(hElemPart.FirstChild("SrcRect").Element()->GetText());
+					auto srcrect = intlist_parse(srcrect_str);
+					auto part_destposStr = std::string(hElemPart.FirstChild("DestPos").Element()->GetText());
+					auto part_destpos = intlist_parse(part_destposStr);
+
+					// load photo -----------------------@/
+					auto photoBase_filename = std::string(hElemPart.FirstChild("SrcImagePath").Element()->GetText());
+					aya::CPhoto photoBase;
+					if(m_photoBaseFilenames.contains(photoBase_filename)) {
+						photoBase = m_photoBaseFilenames[photoBase_filename];
+					} else {
+						photoBase = aya::CPhoto( photoBase_filename,true );
+						m_photoBaseFilenames[photoBase_filename] = photoBase;
+					}
+
+					aya::CPhoto photoPart(srcrect.at(2),srcrect.at(3));
+					photoBase.rect_blit(photoPart,
+						srcrect.at(0),srcrect.at(1),
+						0,0,
+						srcrect.at(2),srcrect.at(3)
+					);
+					auto photoPartHash = photoPart.hash_getIndexed(0);
+					auto photoPartIdxOpt = photo_exists(photoPartHash);
+					int photoPartIdx = -1;
+
+					if(!photoPartIdxOpt.has_value()) {
+						photoPartIdx = m_photoList.size();
+						m_photoList.push_back(photoPart);
+					} else {
+						photoPartIdx = photoPartIdxOpt.value();
+					}
+
+					if(!frame_imgMap.contains(photoPartIdx)) {
+						frame_imgMap[photoPartIdx] = true;
+						frame.m_usedPhotos.push_back(photoPartIdx);
+					}
+					if(!pattern_imgMap.contains(photoPartIdx)) {
+						pattern_imgMap[photoPartIdx] = true;
+						pattern.m_usedPhotos.push_back(photoPartIdx);
+					}
+
+					// add part -------------------------@/
+					part.m_posX = frame_destpos.at(0) + part_destpos.at(0);
+					part.m_posY = frame_destpos.at(1) + part_destpos.at(1);
+					part.m_srcX = srcrect.at(0);
+					part.m_srcY = srcrect.at(1);
+					part.m_imgID = photoPartIdx;
+					frame.m_parts.push_back(part);
+
+					std::printf("\tadded part (imgid=%3d)\n",part.m_imgID);
+				}
+				
+				std::printf("added frame[%2zu]: delay=%3d, pos=(%3d,%3d), (%s)\n",
+					pattern.m_frames.size(),
+					frame.m_delayFrame,
+					frame_destpos.at(0),
+					frame_destpos.at(1),
+					frame.m_name.c_str()
+				);
+				pattern.m_frames.push_back(frame);
+			}
+			
+			m_patterns.push_back(pattern);
+			std::printf("added pattern (%s)\n",pattern.m_name.c_str());
+		}
+	}
+	std::puts("iterated thru");
+}
+
+auto aya::CEdgeAnim::photo_get(int id) -> aya::CPhoto& {
+	if(id < 0 || id >= m_photoList.size()) {
+		std::printf("aya::CEdgeAnim::photo_get(): error: invalid ID (%d)\n",
+			id
+		);
+		std::exit(-1);
+	}
+	return m_photoList.at(id);
+}
+auto aya::CEdgeAnim::photo_exists(uint64_t hash) -> std::optional<int> {
+	int id = -1;
+	for(int i=0; i<m_photoList.size(); i++) {
+		auto& photo = m_photoList.at(i);
+		if(photo.hash_getIndexed(0b00) == hash) {
+			id = i;
+			break;
+		}
+	}
+
+	if(id != -1) {
+		return std::optional<int>(id);
+	} else {
+		return std::optional<int>();
+	}
+}
+
 // conversion ---------------------------------------------------------------@/
 auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, bool do_compress) -> scl::blob {
 	scl::blob out_blob;
@@ -1295,46 +1466,186 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 	const int pad_word = 0xAA;
+	const int pad_size = 32;
 
-	std::printf("loading from file %s\n",filename_xml.c_str());
-	TiXmlDocument xmldoc( filename_xml );
-	if(!xmldoc.LoadFile()) {
-		std::puts("aya::convert_fileAGE(): error: unable to load XML file");
-		std::exit(-1);
-	}
-	TiXmlHandle hXML(&xmldoc);
+	auto edgeanim = aya::CEdgeAnim(filename_xml);
 
 	scl::blob blob_all;
 	scl::blob blob_segHeader;
 	scl::blob blob_segLoaddesc;
-	scl::blob blob_segAnimblock;
-	scl::blob blob_segAnimblockNames;
+	scl::blob blob_segPattern;
+	scl::blob blob_segStrings;
 	scl::blob blob_segFrame;
 	scl::blob blob_segPart;
 	scl::blob blob_segBmp;
 	scl::blob blob_segPalet;
 	
-	// setup animblock names ----------------------------@/
-	{
-		auto hElemBase = hXML.FirstChild("CCaptureData").FirstChild("Pattern");
-		
-		TiXmlElement* pElem = hElemBase.Element();
+	size_t numtotal_frames = 0;
+	size_t numtotal_loaddesc = 0;
+	size_t numtotal_cels = 0;
+	size_t numtotal_parts = 0;
 
-		for(; pElem; pElem = pElem->NextSiblingElement()) {
-			auto hPattern = TiXmlHandle(pElem);
-			auto text = std::string(hPattern.FirstChild("Name").Element()->GetText());
-			blob_segAnimblockNames.write_str(text);
-			std::printf("got it (%s)\n",text.c_str());
+	// load cels ----------------------------------------@/
+	std::vector<std::vector<aya::ALICE_AGEFILE_PART>> part_table;
+	std::vector<size_t> part_tableCelSize;
+	std::vector<size_t> part_tableCelOffset;
+	for(auto partphoto : edgeanim.m_photoList) {
+		part_tableCelOffset.push_back(numtotal_cels * 32);
+		constexpr int lenient_count = 1;
+		auto agb_subframeList = CAGBSubframeList(partphoto,lenient_count);
+		
+		std::vector<aya::ALICE_AGEFILE_PART> filepart_list;
+
+		size_t cel_size = 0;
+		size_t cel_id = 0;
+		for(auto agb_subframe : agb_subframeList.m_subframes) {
+			// get attribute ----------------------------@/
+			int attr_bpp = (aya::alice_graphfmt::getBPP(format) == 8) ? 1 : 0;
+
+			int attr = 
+				(agb_subframe.m_agbShapeID << 6) |
+				(attr_bpp << 5) |
+				(agb_subframe.m_agbSizeID << 14);
+
+			// create file part -------------------------@/
+			auto& subframephoto = agb_subframe.photo();
+			aya::ALICE_AGEFILE_PART filepart;
+			filepart.pos_x = agb_subframe.m_posX;
+			filepart.pos_y = agb_subframe.m_posY;
+			filepart.attr = attr;
+			filepart.cel_idPerFrame = cel_id;
+			filepart.cel_idPerAnim = cel_id;
+			filepart.cel_idPerBank = numtotal_cels;
+			filepart.size_xy = 
+				(agb_subframe.m_sizeX) |
+				(agb_subframe.m_sizeY) << 8;
+
+			// write cels -------------------------------@/
+			auto celtable = subframephoto.rect_split(8,8);
+			for(auto cel : celtable) {
+				auto bmpblob = cel->convert_rawAGI(format);
+				blob_segBmp.write_blob(bmpblob);
+				cel_id += 1;
+				numtotal_cels += 1;
+				cel_size += bmpblob.size();
+			}
+
+			filepart_list.push_back(filepart);
 		}
+
+		part_table.push_back(filepart_list);
+		part_tableCelSize.push_back(cel_size);
 	}
-	std::puts("iterated thru");
+
+	// setup patterns ---------------------------------@/
+	for(auto pattern : edgeanim.m_patterns) {
+		aya::ALICE_AGEFILE_PATTERN filepattern = {};
+		filepattern.frame_idx = numtotal_frames;
+		filepattern.frame_count = pattern.m_frames.size();
+		filepattern.name_offset = blob_segStrings.size();
+		blob_segStrings.write_str(pattern.name());
+
+		// write frames ---------------------------------@/
+		for(auto frame : pattern.m_frames) {
+			aya::ALICE_AGEFILE_FRAME fileframe = {};
+			fileframe.delay = frame.m_delayFrame;
+			fileframe.name_offset = blob_segStrings.size();
+			blob_segStrings.write_str(frame.name());
+
+			// queue up parts to write ------------------@/
+			std::vector<aya::ALICE_AGEFILE_PART> partqueue;
+			for(auto part : frame.m_parts) {
+				auto filepart_list = part_table.at(part.m_imgID);
+				
+				for(auto filepart : filepart_list) {
+					filepart.pos_x += part.m_posX;
+					filepart.pos_y += part.m_posY;
+					partqueue.push_back(filepart);
+				}
+			}
+
+			// flip parts -------------------------------@/
+			fileframe.part_count = partqueue.size();
+			for(int i=0; i<4; i++) {
+				// write offset
+				fileframe.part_idx[i] = numtotal_parts;
+
+				// write objects, flipped & nonflipped
+				int flip_h = (i&1);
+				int flip_v = (i>>1)&1;
+				for(const auto &entry_orig : partqueue) {
+					aya::ALICE_AGEFILE_PART entry = entry_orig;
+					const int sizedat = entry.size_xy;
+					int size_x = sizedat & 0xFF;
+					int size_y = (sizedat >> 8);
+					if(flip_h) entry.pos_x = (-entry.pos_x) - size_x - 1;
+					if(flip_v) entry.pos_y = (-entry.pos_y) - size_y - 1;
+					entry.attr |= (i<<12);
+					
+					blob_segPart.write_raw(&entry,sizeof(entry));
+					numtotal_parts++;
+				//	std::printf("obj (f%d): (%d,%d) [%d,%d]\n",i,entry.pos_x,entry.pos_y,size_x,size_y);
+				}
+			}
+
+			// setup load desc --------------------------@/
+			fileframe.loaddesc_PF_idx = numtotal_loaddesc;
+			fileframe.loaddesc_PF_count = 0;
+			fileframe.loaddesc_PF_totalsize = 0;
+			
+			for(auto imgID : frame.m_usedPhotos) {
+				auto celsize = part_tableCelSize.at(imgID);
+				auto celoffset = part_tableCelOffset.at(imgID);
+				fileframe.loaddesc_PF_count++;
+				fileframe.loaddesc_PF_totalsize += celsize / 32;
+
+				aya::ALICE_AGEFILE_LOADDESC fileloaddesc_PF = {};
+				fileloaddesc_PF.size = celsize;
+				fileloaddesc_PF.src_celOffset = celoffset;
+				blob_segLoaddesc.write_raw(&fileloaddesc_PF,sizeof(fileloaddesc_PF));
+				numtotal_loaddesc++;
+			}
+
+			blob_segFrame.write_raw(&fileframe,sizeof(fileframe));
+		}
+
+		// setup load desc --------------------------@/
+		filepattern.loaddesc_PP_idx = numtotal_loaddesc;
+		filepattern.loaddesc_PP_count = 0;
+		filepattern.loaddesc_PP_totalsize = 0;
+		
+		for(auto imgID : pattern.m_usedPhotos) {
+			auto celsize = part_tableCelSize.at(imgID);
+			auto celoffset = part_tableCelOffset.at(imgID);
+			filepattern.loaddesc_PP_count++;
+			filepattern.loaddesc_PP_totalsize += celsize / 32;
+
+			aya::ALICE_AGEFILE_LOADDESC fileloaddesc_PF = {};
+			fileloaddesc_PF.size = celsize;
+			fileloaddesc_PF.src_celOffset = celoffset;
+			blob_segLoaddesc.write_raw(&fileloaddesc_PF,sizeof(fileloaddesc_PF));
+			numtotal_loaddesc++;
+		}
+
+		numtotal_frames += pattern.m_frames.size();
+		blob_segPattern.write_raw(&filepattern,sizeof(filepattern));
+	}
+
+	// pad data -----------------------------------------@/
+	blob_segLoaddesc.pad(pad_size,pad_word);
+	blob_segPattern.pad(pad_size,pad_word);
+	blob_segStrings.pad(pad_size,pad_word);
+	blob_segFrame.pad(pad_size,pad_word);
+	blob_segPart.pad(pad_size,pad_word);
+	blob_segBmp.pad(pad_size,pad_word);
+	blob_segPalet.pad(pad_size,pad_word);
 
 	// create header ------------------------------------@/
-	size_t header_size = 80;
+	size_t header_size = 96;
 	size_t offset_segLoaddesc = header_size;
-	size_t offset_segAnimblock = offset_segLoaddesc + blob_segLoaddesc.size();
-	size_t offset_segAnimblockNames = offset_segAnimblock + blob_segAnimblock.size();
-	size_t offset_segFrame = offset_segAnimblockNames + blob_segAnimblockNames.size();
+	size_t offset_segPattern = offset_segLoaddesc + blob_segLoaddesc.size();
+	size_t offset_segStrings = offset_segPattern + blob_segPattern.size();
+	size_t offset_segFrame = offset_segStrings + blob_segStrings.size();
 	size_t offset_segPart = offset_segFrame + blob_segFrame.size();
 	size_t offset_segBmp = offset_segPart + blob_segPart.size();
 	size_t offset_segPalet = offset_segBmp + blob_segBmp.size();
@@ -1345,8 +1656,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	header.magic[2] = 'E';
 	header.format_flags = format;
 	header.offset_segLoaddesc = offset_segLoaddesc;
-	header.offset_segAnimblock = offset_segAnimblock;
-	header.offset_segAnimblockNames = offset_segAnimblockNames;
+	header.offset_segPattern = offset_segPattern;
+	header.offset_segStrings = offset_segStrings;
 	header.offset_segFrame = offset_segFrame;
 	header.offset_segPart = offset_segPart;
 	header.offset_segBmp = offset_segBmp;
@@ -1357,8 +1668,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 
 	blob_all.write_blob(blob_segHeader);
 	blob_all.write_blob(blob_segLoaddesc);
-	blob_all.write_blob(blob_segAnimblock);
-	blob_all.write_blob(blob_segAnimblockNames);
+	blob_all.write_blob(blob_segPattern);
+	blob_all.write_blob(blob_segStrings);
 	blob_all.write_blob(blob_segFrame);
 	blob_all.write_blob(blob_segPart);
 	blob_all.write_blob(blob_segBmp);

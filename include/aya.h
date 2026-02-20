@@ -5,6 +5,8 @@
 #include <string>
 #include <memory>
 #include <array>
+#include <map>
+#include <optional>
 
 namespace aya {
 	class CPhoto;
@@ -15,6 +17,10 @@ namespace aya {
 	class CWorkingFrameList;
 	class CAGBSubframe;
 	class CAGBSubframeList;
+	class CEdgeAnim;
+	class CEdgeAnimPattern;
+	class CEdgeAnimFrame;
+	class CEdgeAnimPart;
 
 	struct MARISA_MGIFILE_HEADER;
 	struct PATCHU_PGIFILE_HEADER;
@@ -28,7 +34,7 @@ namespace aya {
 	struct ALICE_AGAFILE_SUBFRAME;
 	struct ALICE_AGEFILE_HEADER;
 	struct ALICE_AGEFILE_LOADDESC;
-	struct ALICE_AGEFILE_ANIMBLOCK;
+	struct ALICE_AGEFILE_PATTERN;
 	struct ALICE_AGEFILE_FRAME;
 	struct ALICE_AGEFILE_PART;
 	struct ALICE_AGIFILE_HEADER;
@@ -275,13 +281,13 @@ struct aya::ALICE_AGAFILE_SUBFRAME {
 struct aya::ALICE_AGEFILE_HEADER {
 	char magic[4];
 	uint32_t format_flags;
-	uint32_t loaddesc_PB_idx;
-	uint32_t loaddesc_PB_count;
-	uint32_t loaddesc_PB_totalsize;
-	uint32_t animblock_count;
+	uint16_t loaddesc_PB_idx;
+	uint16_t loaddesc_PB_count;
+	uint16_t loaddesc_PB_totalsize; // div by 32
+	uint16_t pattern_count;
 	uint32_t offset_segLoaddesc;
-	uint32_t offset_segAnimblock;
-	uint32_t offset_segAnimblockNames;
+	uint32_t offset_segPattern;
+	uint32_t offset_segStrings;
 	uint32_t offset_segFrame;
 	uint32_t offset_segPart;
 	uint32_t offset_segBmp;
@@ -292,20 +298,22 @@ struct aya::ALICE_AGEFILE_LOADDESC {
 	uint16_t size;
 	uint16_t src_celOffset;
 };
-struct aya::ALICE_AGEFILE_ANIMBLOCK {
-	uint32_t loaddesc_PA_idx;
-	uint32_t loaddesc_PA_count;
-	uint32_t loaddesc_PA_totalsize;
+struct aya::ALICE_AGEFILE_PATTERN {
+	uint16_t loaddesc_PP_idx;
+	uint16_t loaddesc_PP_count;
+	uint16_t loaddesc_PP_totalsize; // div by 32
 	uint16_t frame_idx;
 	uint16_t frame_count;
+	uint32_t name_offset;
 };
 struct aya::ALICE_AGEFILE_FRAME {
-	uint32_t loaddesc_PF_idx;
-	uint32_t loaddesc_PF_count;
-	uint32_t loaddesc_PF_totalsize;
+	uint16_t loaddesc_PF_idx;
+	uint16_t loaddesc_PF_count;
+	uint16_t loaddesc_PF_totalsize; // div by 32
 	uint16_t delay;
 	uint16_t part_count;
 	uint16_t part_idx[4];
+	uint32_t name_offset;
 };
 struct aya::ALICE_AGEFILE_PART {
 	// attr stores both attr1 data and attr2 data
@@ -315,9 +323,9 @@ struct aya::ALICE_AGEFILE_PART {
 	int16_t pos_x;
 	int16_t pos_y;
 	uint16_t attr;
-	uint16_t cel_idPF;
-	uint16_t cel_idPA;
-	uint16_t cel_idPB;
+	uint16_t cel_idPerFrame;
+	uint16_t cel_idPerAnim;
+	uint16_t cel_idPerBank;
 	uint16_t size_xy;
 };
 struct aya::ALICE_AGMFILE_HEADER {
@@ -515,5 +523,50 @@ class aya::CAGBSubframeList {
 	CAGBSubframeList();
 	CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count = 0);
 	~CAGBSubframeList() {}
+};
+
+class aya::CEdgeAnimPart {
+	private:
+	public:
+		int m_posX,m_posY;
+		int m_srcX,m_srcY;
+		bool m_flipH,m_flipV;
+		int m_imgID;
+};
+class aya::CEdgeAnimFrame {
+	private:
+	public:
+		int m_delayFrame;
+		std::string m_name;
+		std::vector<int> m_usedPhotos;
+		std::vector<CEdgeAnimPart> m_parts;
+
+		auto name() -> const std::string& { return m_name; }
+};
+class aya::CEdgeAnimPattern {
+	private:
+	public:
+		std::string m_name;
+		std::vector<int> m_usedPhotos;
+		std::vector<CEdgeAnimFrame> m_frames;
+
+		auto name() -> const std::string& { return m_name; }
+		
+		CEdgeAnimPattern();
+		~CEdgeAnimPattern() {}
+};
+class aya::CEdgeAnim {
+	private:
+	public:
+		std::vector<CEdgeAnimPattern> m_patterns;
+		std::vector<aya::CPhoto> m_photoList;
+		std::map<std::string,aya::CPhoto> m_photoBaseFilenames;
+
+		auto photo_get(int id) -> aya::CPhoto&;
+		auto photo_exists(uint64_t hash) -> std::optional<int>;
+
+		CEdgeAnim();
+		CEdgeAnim(const std::string& filename_xml);
+		~CEdgeAnim() {}
 };
 
