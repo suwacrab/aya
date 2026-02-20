@@ -1638,6 +1638,18 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 		blob_segPattern.write_raw(&filepattern,sizeof(filepattern));
 	}
 
+	// write palettes -----------------------------------@/
+	if(aya::alice_graphfmt::getBPP(format) <= 8) {
+		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
+		for (const auto & [filename,photo] : edgeanim.m_photoBaseFilenames) {
+			for(int p=0; p<color_count; p++) {
+				photo.palet_get(p).write_rgb5a1_agb(blob_segPalet);
+			}
+		}
+	} else {
+		blob_segPalet.write_str("none");
+	}
+
 	// pad data -----------------------------------------@/
 	bmpsection_sizeOrig = blob_segBmp.size();
 
