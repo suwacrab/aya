@@ -322,7 +322,7 @@ aya::CEdgeAnim::CEdgeAnim() {
 }
 aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 	// loading XML file ---------------------------------@/
-	std::printf("loading from file %s\n",filename_xml.c_str());
+//	std::printf("loading from file %s\n",filename_xml.c_str());
 	TiXmlDocument xmldoc( filename_xml );
 	if(!xmldoc.LoadFile()) {
 		std::puts("aya::CEdgeAnim::CEdgeAnim(): error: unable to load XML file");
@@ -348,7 +348,7 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 		return list_num;
 	};
 
-	std::puts("xml loaded");
+//	std::puts("xml loaded");
 
 	// setup patterns -----------------------------------@/
 	{
@@ -378,9 +378,14 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 				std::map<int,bool> frame_imgMap;
 
 				// get parts ----------------------------@/
-				TiXmlElement* pElemPart = hElemFrame.LastChild("Part").Element();
-				for(; pElemPart; pElemPart = pElemPart->PreviousSiblingElement()) {
+				std::vector<TiXmlHandle> hElemPart_table;
+				TiXmlElement* pElemPart = hElemFrame.FirstChild("Part").Element();
+				for(; pElemPart; pElemPart = pElemPart->NextSiblingElement()) {
 					auto hElemPart = TiXmlHandle(pElemPart);
+					hElemPart_table.insert(hElemPart_table.begin(),hElemPart);
+				}
+
+				for(auto& hElemPart : hElemPart_table) {
 					aya::CEdgeAnimPart part;
 
 					// srcrect is x1,y1,x2,y2.
@@ -452,7 +457,7 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 			// std::printf("added pattern (%s)\n",pattern.m_name.c_str());
 		}
 	}
-	std::puts("iterated thru");
+//	std::puts("iterated thru");
 }
 
 auto aya::CEdgeAnim::photo_get(int id) -> aya::CPhoto& {
