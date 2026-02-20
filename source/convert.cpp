@@ -303,6 +303,10 @@ aya::CAGBSubframeList::CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count
 			subframe.m_sizeY = subframe_photo.height();
 			subframe.m_agbSizeID = AGBSizeIDs.at(largest_areaIdx);
 			subframe.m_agbShapeID = AGBShapes.at(largest_areaIdx);
+			/*std::printf("pos: (%d,%d)\n",
+				subframe.m_posX,
+				subframe.m_posY
+			);*/
 
 			m_subframes.push_back(subframe);
 		}
@@ -382,7 +386,8 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 				TiXmlElement* pElemPart = hElemFrame.FirstChild("Part").Element();
 				for(; pElemPart; pElemPart = pElemPart->NextSiblingElement()) {
 					auto hElemPart = TiXmlHandle(pElemPart);
-					hElemPart_table.insert(hElemPart_table.begin(),hElemPart);
+				//	hElemPart_table.insert(hElemPart_table.begin(),hElemPart);
+					hElemPart_table.push_back(hElemPart);
 				}
 
 				for(auto& hElemPart : hElemPart_table) {
@@ -432,11 +437,14 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 					}
 
 					// add part -------------------------@/
+					int flipval = std::stoi( std::string(hElemPart.FirstChild("Invert").Element()->GetText()) );
 					part.m_posX = frame_destpos.at(0) + part_destpos.at(0);
 					part.m_posY = frame_destpos.at(1) + part_destpos.at(1);
 					part.m_srcX = srcrect.at(0);
 					part.m_srcY = srcrect.at(1);
 					part.m_imgID = photoPartIdx;
+					part.m_flipH = (flipval >> 0) & 1;
+					part.m_flipV = (flipval >> 1) & 1;
 					frame.m_parts.push_back(part);
 
 				//	std::printf("\tadded part (imgid=%3d)\n",part.m_imgID);
@@ -1494,11 +1502,16 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	size_t bmpsection_sizeOrig;
 
 	// load cels ----------------------------------------@/
-	std::vector<std::vector<aya::ALICE_AGEFILE_PART>> part_table;
-	std::vector<size_t> part_tableCelSize;
-	std::vector<size_t> part_tableCelOffset;
+	struct PhotoInfo {
+		std::vector<aya::ALICE_AGEFILE_PART> filepart_list;
+		CAGBSubframeList agb_subframeList;
+		size_t cel_size;
+		size_t cel_offset;
+	};
+	std::vector<PhotoInfo> tbl_photoinfo;
 	for(auto partphoto : edgeanim.m_photoList) {
-		part_tableCelOffset.push_back(numtotal_cels * 32);
+		PhotoInfo photoinfo = {};
+		photoinfo.cel_offset = numtotal_cels * 32;
 		auto agb_subframeList = CAGBSubframeList(partphoto,info.lenient_count);
 		
 		std::vector<aya::ALICE_AGEFILE_PART> filepart_list;
@@ -1540,8 +1553,10 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			filepart_list.push_back(filepart);
 		}
 
-		part_table.push_back(filepart_list);
-		part_tableCelSize.push_back(cel_size);
+		photoinfo.cel_size = cel_size;
+		photoinfo.filepart_list = filepart_list;
+		photoinfo.agb_subframeList = agb_subframeList;
+		tbl_photoinfo.push_back(photoinfo);
 	}
 
 	// setup patterns ---------------------------------@/
@@ -1562,9 +1577,20 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			// queue up parts to write ------------------@/
 			std::vector<aya::ALICE_AGEFILE_PART> partqueue;
 			for(auto part : frame.m_parts) {
-				auto filepart_list = part_table.at(part.m_imgID);
+				auto photoinfo = tbl_photoinfo.at(part.m_imgID);
+				auto filepart_list = photoinfo.filepart_list;
 				
-				for(auto filepart : filepart_list) {
+				for(const auto& srcpart : filepart_list) {
+					aya::ALICE_AGEFILE_PART filepart = srcpart;
+				//	const int sizedat = filepart.size_xy;
+				//	int size_x = sizedat & 0xFF;
+				//	int size_y = (sizedat >> 8);
+
+					if(part.m_flipH) {
+						filepart.attr |= (0b01<<12);
+						filepart.pos_x = 0;
+					}
+
 					filepart.pos_x += part.m_posX;
 					filepart.pos_y += part.m_posY;
 					partqueue.push_back(filepart);
@@ -1587,7 +1613,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 					int size_y = (sizedat >> 8);
 					if(flip_h) entry.pos_x = (-entry.pos_x) - size_x - 1;
 					if(flip_v) entry.pos_y = (-entry.pos_y) - size_y - 1;
-					entry.attr |= (i<<12);
+					entry.attr ^= (i<<12);
 					
 					blob_segPart.write_raw(&entry,sizeof(entry));
 					numtotal_parts++;
@@ -1601,8 +1627,9 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			fileframe.loaddesc_PF_totalsize = 0;
 			
 			for(auto imgID : frame.m_usedPhotos) {
-				auto celsize = part_tableCelSize.at(imgID);
-				auto celoffset = part_tableCelOffset.at(imgID);
+				auto photoinfo = tbl_photoinfo.at(imgID);
+				auto celsize = photoinfo.cel_size;
+				auto celoffset = photoinfo.cel_offset;
 				fileframe.loaddesc_PF_count++;
 				fileframe.loaddesc_PF_totalsize += celsize / 32;
 
@@ -1622,8 +1649,9 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 		filepattern.loaddesc_PP_totalsize = 0;
 		
 		for(auto imgID : pattern.m_usedPhotos) {
-			auto celsize = part_tableCelSize.at(imgID);
-			auto celoffset = part_tableCelOffset.at(imgID);
+			auto photoinfo = tbl_photoinfo.at(imgID);
+			auto celsize = photoinfo.cel_size;
+			auto celoffset = photoinfo.cel_offset;
 			filepattern.loaddesc_PP_count++;
 			filepattern.loaddesc_PP_totalsize += celsize / 32;
 
