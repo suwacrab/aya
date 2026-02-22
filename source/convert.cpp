@@ -1590,6 +1590,10 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 						filepart.attr |= (0b01<<12);
 						filepart.pos_x = 0;
 					}
+					if(part.m_flipV) {
+						filepart.attr |= (0b10<<12);
+						filepart.pos_y = 0;
+					}
 
 					filepart.pos_x += part.m_posX;
 					filepart.pos_y += part.m_posY;
