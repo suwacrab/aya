@@ -1611,8 +1611,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 					const int sizedat = entry.size_xy;
 					int size_x = sizedat & 0xFF;
 					int size_y = (sizedat >> 8);
-					if(flip_h) entry.pos_x = (-entry.pos_x) - size_x - 1;
-					if(flip_v) entry.pos_y = (-entry.pos_y) - size_y - 1;
+					if(flip_h) entry.pos_x = (-entry.pos_x) - size_x;
+					if(flip_v) entry.pos_y = (-entry.pos_y) - size_y;
 					entry.attr ^= (i<<12);
 					
 					blob_segPart.write_raw(&entry,sizeof(entry));
