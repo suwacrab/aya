@@ -530,6 +530,7 @@ class aya::CEdgeAnimPart {
 	public:
 		int m_posX,m_posY;
 		int m_srcX,m_srcY;
+		int m_sizeX,m_sizeY;
 		bool m_flipH,m_flipV;
 		int m_imgID;
 };

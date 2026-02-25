@@ -442,6 +442,8 @@ aya::CEdgeAnim::CEdgeAnim(const std::string& filename_xml) {
 					part.m_posY = frame_destpos.at(1) + part_destpos.at(1);
 					part.m_srcX = srcrect.at(0);
 					part.m_srcY = srcrect.at(1);
+					part.m_sizeX = srcrect.at(2);
+					part.m_sizeY = srcrect.at(3);
 					part.m_imgID = photoPartIdx;
 					part.m_flipH = (flipval >> 0) & 1;
 					part.m_flipV = (flipval >> 1) & 1;
@@ -1580,23 +1582,38 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 				auto photoinfo = tbl_photoinfo.at(part.m_imgID);
 				auto filepart_list = photoinfo.filepart_list;
 				
+				int celidbase_PF = 0;
 				for(const auto& srcpart : filepart_list) {
 					aya::ALICE_AGEFILE_PART filepart = srcpart;
-				//	const int sizedat = filepart.size_xy;
-				//	int size_x = sizedat & 0xFF;
-				//	int size_y = (sizedat >> 8);
+					const int sizedat = filepart.size_xy;
+					int size_x = sizedat & 0xFF;
+					int size_y = (sizedat >> 8);
 
+					/*
+					 * the issue now seems to be that this (obviously) makes
+					   flipped parts' coordinates set to 0.
+					 * if a part is flipped, get local coordinate (xpos).
+					*/
 					if(part.m_flipH) {
 						filepart.attr |= (0b01<<12);
-						filepart.pos_x = 0;
-					}
-					if(part.m_flipV) {
-						filepart.attr |= (0b10<<12);
-						filepart.pos_y = 0;
+						int localoffset = part.m_sizeX - filepart.pos_x;
+						filepart.pos_x = part.m_posX + localoffset - size_x;
+					} else {
+						filepart.pos_x += part.m_posX;
 					}
 
-					filepart.pos_x += part.m_posX;
-					filepart.pos_y += part.m_posY;
+					if(part.m_flipV) {
+						filepart.attr |= (0b10<<12);
+						int localoffset = part.m_sizeY - filepart.pos_y;
+						filepart.pos_y = part.m_posY + localoffset - size_y;
+					} else {
+						filepart.pos_y += part.m_posY;
+					}
+
+					int celid_PF_offset = celidbase_PF;
+					celidbase_PF += filepart.cel_idPerFrame;
+					filepart.cel_idPerFrame += celid_PF_offset;
+
 					partqueue.push_back(filepart);
 				}
 			}
