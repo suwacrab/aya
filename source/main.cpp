@@ -52,6 +52,9 @@ int main(int argc,const char* argv[]) {
 	int param_agi_subimageY = 0;
 	bool param_agi_splitcel = false;
 
+	int param_agm_celsizeX = 0;
+	int param_agm_celsizeY = 0;
+
 	int param_hgi_subimageX = 0;
 	int param_hgi_subimageY = 0;
 
@@ -141,6 +144,12 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-agi_splitcel")) {
 		param_agi_splitcel = true;
+	}
+
+	// AGM-specific
+	if(argparser.arg_isValid("-agm_celsize",2)) {
+		param_agm_celsizeX = std::stoi(argparser.arg_get("-agm_celsize",2).at(1));
+		param_agm_celsizeY = std::stoi(argparser.arg_get("-agm_celsize",2).at(2));
 	}
 
 	// HGI-specific
@@ -441,7 +450,10 @@ int main(int argc,const char* argv[]) {
 		auto info = (aya::CAliceAGMConvertInfo){
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
-			.verbose = do_verbose
+			.verbose = do_verbose,
+			.raw_cels = false,
+			.cel_sizeX = param_agm_celsizeX,
+			.cel_sizeY = param_agm_celsizeY,
 		};
 		auto pic_blob = pic.convert_fileAGM(info);
 		if(!pic_blob.file_send(param_outfile)) {

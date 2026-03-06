@@ -157,6 +157,9 @@ namespace aya {
 		bool do_compress;
 		int format;
 		bool verbose;
+		bool raw_cels;
+		int cel_sizeX;
+		int cel_sizeY;
 	};
 	struct CHouraiHGIConvertInfo {
 		bool do_compress;

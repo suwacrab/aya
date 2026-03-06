@@ -1861,9 +1861,11 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 		std::exit(-1);
 	}
 
+	int cel_sizeX = info.cel_sizeX ? info.cel_sizeX : 8;
+	int cel_sizeY = info.cel_sizeY ? info.cel_sizeY : 8;
 	const int max_numtiles = 1024;
-	const int map_width = width() / 8;
-	const int map_height = height() / 8;
+	const int map_width = width() / cel_sizeX;
+	const int map_height = height() / cel_sizeY;
 
 	int subimage_count = 0;
 
@@ -1874,7 +1876,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 	scl::blob blob_bmpsection;
 
 	// write frames -------------------------------------@/
-	auto imagetable = rect_split(8,8); {
+	auto imagetable = rect_split(cel_sizeX,cel_sizeY); {
 		std::map<uint64_t,size_t> imghash_map;
 		std::map<uint64_t,size_t> imghash_mapRealIdx;
 		size_t num_processedCel = 0;
@@ -1902,8 +1904,8 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 					
 					if(info.verbose) {
 						auto get_tileXY = [&](int idx, int &x, int &y) {
-							x = 8 * (idx % (this->width()/8));
-							y = 8 * (idx / (this->width()/8));
+							x = cel_sizeX * (idx % map_width);
+							y = cel_sizeY * (idx / map_width);
 						};
 						
 						int orig_index = imghash_mapRealIdx[hash];
@@ -1939,8 +1941,11 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 
 				imghash_map[image_hashes[0]] = index;
 				imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
-				auto bmpblob = srcpic->convert_rawAGI(format);
-				blob_bmpsection.write_blob(bmpblob);
+				auto cels = srcpic->rect_split(8,8);
+				for(auto cel : cels) {
+					auto bmpblob = cel->convert_rawAGI(format);
+					blob_bmpsection.write_blob(bmpblob);
+				}
 				blob_mapsection.write_u16(index);
 				subimage_count++;
 			}
@@ -2001,10 +2006,15 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 	blob_headersection.write_raw(&header,sizeof(header));
 	blob_headersection.pad(header_size,pad_word);
 
-	out_blob.write_blob(blob_headersection);
-	out_blob.write_blob(blob_paletsection);
-	out_blob.write_blob(blob_mapsection);
-	out_blob.write_blob(blob_bmpsection);
+	if(info.raw_cels) {
+		blob_bmpsection.pad(32 * 256,pad_word);
+		out_blob.write_blob(blob_bmpsection);
+	} else {
+		out_blob.write_blob(blob_headersection);
+		out_blob.write_blob(blob_paletsection);
+		out_blob.write_blob(blob_mapsection);
+		out_blob.write_blob(blob_bmpsection);
+	}
 
 	return out_blob;
 }
