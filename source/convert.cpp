@@ -1810,6 +1810,13 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl:
 		blob_bmpsection.write_blob(bmpblob);
 	}
 
+	// compress, if necessary ---------------------------@/
+	if(info.do_compress) {
+		// compress bmp section -------------------------@/
+		scl::blob bmpsection_old = blob_bmpsection;
+		blob_bmpsection = aya::compress_spd(bmpsection_old);
+	}
+
 	// create palette -----------------------------------@/
 	if(aya::alice_graphfmt::getBPP(format) <= 8) {
 		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
