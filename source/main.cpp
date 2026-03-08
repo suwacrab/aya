@@ -85,9 +85,9 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-v")) {
 		do_verbose = true;
 	}
-	if(argparser.arg_isValid("-pexport",2)) {
-		param_exportpal_filename = argparser.arg_get("-pexport",2).at(1);
-		param_exportpal_format = argparser.arg_get("-pexport",2).at(2);	
+	if(argparser.arg_isValid("-pal_export",2)) {
+		param_exportpal_filename = argparser.arg_get("-pal_export",2).at(1);
+		param_exportpal_format = argparser.arg_get("-pal_export",2).at(2);	
 	}
 
 	// MGI-specific
@@ -451,7 +451,7 @@ int main(int argc,const char* argv[]) {
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
 			.verbose = do_verbose,
-			.raw_cels = false,
+			.raw_cels = true,
 			.cel_sizeX = param_agm_celsizeX,
 			.cel_sizeY = param_agm_celsizeY,
 		};

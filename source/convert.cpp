@@ -1954,6 +1954,13 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 		}
 	}
 
+	// compress, if necessary ---------------------------@/
+	if(info.do_compress) {
+		// compress bmp section -------------------------@/
+		scl::blob bmpsection_old = blob_bmpsection;
+		blob_bmpsection = aya::compress_spd(bmpsection_old);
+	}
+
 	// create palette -----------------------------------@/
 	if(aya::alice_graphfmt::getBPP(format) <= 8) {
 		scl::blob palet_blob;

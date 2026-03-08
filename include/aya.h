@@ -185,6 +185,7 @@ namespace aya {
 
 	auto conv_po2(int n) -> int;
 	auto compress(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
+	auto compress_spd(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
 	auto version_get() -> CAyaVersion;
 	auto twiddled_index(int x, int y, int w, int h) -> size_t;
 	auto twiddled_index4b(int x, int y, int w, int h) -> size_t;
