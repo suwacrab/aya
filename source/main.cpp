@@ -451,7 +451,7 @@ int main(int argc,const char* argv[]) {
 			.do_compress = do_compress,
 			.format = pixelfmt_flags,
 			.verbose = do_verbose,
-			.raw_cels = true,
+			.raw_cels = false,
 			.cel_sizeX = param_agm_celsizeX,
 			.cel_sizeY = param_agm_celsizeY,
 		};
