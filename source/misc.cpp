@@ -1,6 +1,9 @@
 #include <aya.h>
 #include <zlib.h>
 
+#include <algorithm>
+#include <deque>
+
 #define TWIDTAB(x) ( (x&1)|((x&2)<<1)|((x&4)<<2)|((x&8)<<3)|((x&16)<<4)| \
                      ((x&32)<<5)|((x&64)<<6)|((x&128)<<7)|((x&256)<<8)|((x&512)<<9) )
 #define TWIDOUT(x, y) ( TWIDTAB((y)) | (TWIDTAB((x)) << 1) )
@@ -15,6 +18,206 @@ namespace SPDCommand {
 		MaxLength = 1<<13,
 	};
 };
+
+namespace SPDHuffman {
+	using Word = uint8_t;
+	class Node;
+	using SharedNode = std::shared_ptr<Node>;
+
+	class Node {
+		public:
+			Node() {
+				mCount = 0;
+				mWord.clear();
+			}
+			Node(SharedNode a, SharedNode b) {
+				mCount = a->count() + b->count();
+				mWord = a->mWord;
+				mWord.insert(mWord.end(),b->mWord.begin(),b->mWord.end());
+				mLeafA = a; // std::move(a);
+				mLeafB = b; // std::move(b);
+			}
+			std::vector<Word> mWord;
+			size_t mCount;
+			SharedNode mLeafA;
+			SharedNode mLeafB;
+
+			auto count() const -> size_t { return mCount; }
+			auto word_str() const -> std::string {
+				std::string str;
+				for(auto letter : mWord) {
+					str.push_back(std::isprint(letter) ? letter : ' ');
+				}
+				return str;
+			}
+	};
+};
+
+auto spd_huffpack(scl::blob& _srcblob) -> scl::blob {
+	using Node = SPDHuffman::Node;
+	using Word = SPDHuffman::Word;
+	using SharedNode = SPDHuffman::SharedNode;
+	
+	scl::blob srcblob(_srcblob);
+	srcblob.pad(sizeof(Word));
+
+	const size_t src_size = srcblob.size();
+	const size_t src_sizeWord = src_size / sizeof(Word);
+	scl::blob blobAll;
+	scl::blob blobHeader;
+	scl::blob blobData;
+
+	auto src_at = [&](size_t idx) constexpr {
+		return srcblob.data<Word*>()[idx];
+	};
+
+	// create frequency table ---------------------------@/
+	std::vector<Word> freq_list;
+	std::map<Word,size_t> freq_table;
+	for(size_t i=0; i<src_sizeWord; i++) {
+		auto word = src_at(i);
+		if(freq_table.count(word) == 0) {
+			freq_table[word] = 0;
+			freq_list.push_back(word);
+		}
+		freq_table[word]++;
+	}
+
+	// create initial frequency tree --------------------@/
+	std::deque<SPDHuffman::SharedNode> freq_array;
+	for(auto word : freq_list) {
+		auto node = std::make_shared<Node>();
+		node->mWord.push_back(word);
+		node->mCount = freq_table[word];
+		freq_array.push_back(node);
+	}
+
+	// parse frequency tree -----------------------------@/
+	SharedNode nodeCurrent;
+	
+	/*
+	std::sort(freq_array.begin(),freq_array.end(),[](SharedNode a, SharedNode b) {
+		return a->count() < b->count();
+	});
+	for(auto freq : freq_array) {
+		std::printf("freq (%s): %zu\n",freq->word_str().c_str(), freq->count());
+	}
+	*/
+
+	while(freq_array.size() > 1) {
+		// sort -----------------------------------------@/
+		std::sort(freq_array.begin(),freq_array.end(),[](SharedNode a, SharedNode b) {
+			return a->count() < b->count();
+		});
+
+		// combine nodes --------------------------------@/
+		auto freqA = freq_array.at(0);
+		auto freqB = freq_array.at(1);
+		auto newfreq = std::make_shared<Node>(freqA,freqB);
+
+		freq_array.pop_front();
+		freq_array.pop_front();
+		freq_array.push_back(newfreq);
+
+		nodeCurrent = newfreq;
+	}
+
+	// create huffman dict ------------------------------@/
+	std::map<Word,std::vector<bool>> huffpath_dict;
+	auto iter = [&](SharedNode node,std::vector<bool> cur_path) {
+		auto iter_impl = [&](SharedNode node,std::vector<bool> cur_path, auto& iter_ref) -> void {
+			if(!node) return;
+			if(node->mWord.size() == 1) {
+				auto name = node->mWord.at(0);
+				huffpath_dict[name] = cur_path;
+			}
+
+			std::vector<bool> path_a = cur_path;
+			std::vector<bool> path_b = cur_path;
+			path_a.push_back(false);
+			path_b.push_back(true);
+			iter_ref(node->mLeafA,path_a,iter_ref);
+			iter_ref(node->mLeafB,path_b,iter_ref);
+		};
+
+		iter_impl(node,cur_path,iter_impl);
+	};
+	iter(freq_array.front(),{});
+
+	// write data ---------------------------------------@/
+	int bitstream_current = 0;
+	int bitstream_idx = 0;
+	auto bitstream_flush = [&]() {
+		blobData.write_u8(bitstream_current);
+		bitstream_current = 0;
+		bitstream_idx = 0;
+	};
+	auto bitstream_write = [&](int b) {
+		bitstream_current |= (b << (bitstream_idx++));
+		if(bitstream_idx == 8) {
+			bitstream_flush();
+		}
+	};
+	for(size_t src_index=0; src_index<src_sizeWord; src_index++) {
+		auto path = huffpath_dict[src_at(src_index)];
+		for(auto entry : path) {
+			bitstream_write(entry ? 1 : 0);
+		}
+	}
+	if(bitstream_idx != 0) bitstream_flush();
+
+	// create header ------------------------------------@/
+	scl::blob blobHeader_name;
+	scl::blob blobHeader_len;
+	scl::blob blobHeader_freq;
+	int blobHeader_len_buf = 0;
+	bool blobHeader_len_doFlush = false;
+
+	for(auto word : freq_list) {
+		/*
+			* 0NNL:FFFF
+				- N: name
+				- L: length
+				- F: freq
+			* can be split into:
+				- uword N[]
+				- ubyte L[]
+				- uword F[]
+		*/
+		// generate path word ---------------------------@/
+		auto path = huffpath_dict[word];
+		int freq = 0;
+		for(size_t b_idx=0; b_idx<path.size(); b_idx++) {
+			auto entry = path.at(b_idx);
+			freq |= entry << b_idx;
+		};
+
+		// write to header ------------------------------@/
+		blobHeader_name.write_u8(word);
+		blobHeader_freq.write_u16(freq);
+		int write_len = path.size()-1;
+		if(blobHeader_len_doFlush) {
+			blobHeader_len_buf |= (write_len<<4);
+			blobHeader_len.write_u8(blobHeader_len_buf);
+		} else {
+			blobHeader_len_buf = write_len;
+		}
+		blobHeader_len_doFlush = !blobHeader_len_doFlush;
+	}
+	if(blobHeader_len_doFlush) {
+		blobHeader_len.write_u8(blobHeader_len_buf);
+	}
+
+	blobHeader.write_str("SPH");
+	blobHeader.write_blob(blobHeader_name);
+	blobHeader.write_blob(blobHeader_freq);
+	blobHeader.write_blob(blobHeader_len);
+
+	// create file --------------------------------------@/
+	blobAll.write_blob(blobHeader);
+	blobAll.write_blob(blobData);
+	return blobAll;
+}
 
 auto aya::compress(scl::blob& srcblob, bool do_compress) -> scl::blob {
 	return srcblob.compress_raw(do_compress);
@@ -148,6 +351,13 @@ auto aya::compress_spd(scl::blob& srcblob, bool do_compress) -> scl::blob {
 	blobAll.write_blob(blobHeader);
 	blobAll.write_blob(blobData);
 
+	/*
+		* huffman: 10.88k
+		* lz: 10.69k
+		* lz->huffman: 8.22k
+	*/
+
+//	return spd_huffpack(blobAll);
 	return blobAll;
 }
 auto aya::conv_po2(int n) -> int {
