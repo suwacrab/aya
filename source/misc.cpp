@@ -24,10 +24,11 @@ auto aya::compress_spd(scl::blob& srcblob, bool do_compress) -> scl::blob {
 		* .SPD (sadza teahouse packed data):
 		* 4 bytes size
 		* array of commands
-			- d.w: header (0MML:LLLL:LLLL:LLLL) OR
-			- d.b: header (1MML:LLLL)
+			- d.b: header (0MML:LLLL)
+			- d.w: header (1MML:LLLL:LLLL:LLLL)
 			- d.b: data
 			- the length is actually +1!
+			- the header is big-endian.
 
 		* we need the following modes:
 			- raw
@@ -132,10 +133,10 @@ auto aya::compress_spd(scl::blob& srcblob, bool do_compress) -> scl::blob {
 		}
 	//	std::printf("did cmd (lz=%3zu, rle=%3zu, raw=%3zu)\n", lz_len,rle_len,raw_len );
 		if(cmd_len > 32) {
-			blobData.write_u16((cmd_len-1) | (cmd_name<<cmdmode_shift));
+			blobData.write_be_u16(0x8000 | (cmd_len-1) | (cmd_name<<cmdmode_shift));
 			blobData.write_blob(blobCmdData);
 		} else {
-			blobData.write_u8(0x80 | (cmd_len-1) | (cmd_name<<5));
+			blobData.write_u8((cmd_len-1) | (cmd_name<<5));
 			blobData.write_blob(blobCmdData);
 		}
 	}

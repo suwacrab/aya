@@ -1849,6 +1849,8 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl:
 	header.bitmap_size = blob_bmpsection.size();
 	header.offset_paletsection = offset_paletsection;
 	header.offset_bmpsection = offset_bmpsection;
+	
+	if(info.do_compress) header.format_flags |= (1<<8);
 
 	blob_headersection.write_raw(&header,sizeof(header));
 	blob_headersection.pad(header_size,pad_word);
@@ -2016,6 +2018,8 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 	header.offset_paletsection = offset_paletsection;
 	header.offset_mapsection = offset_mapsection;
 	header.offset_bmpsection = offset_bmpsection;
+
+	if(info.do_compress) header.format_flags |= (1<<8);
 
 	blob_headersection.write_raw(&header,sizeof(header));
 	blob_headersection.pad(header_size,pad_word);
