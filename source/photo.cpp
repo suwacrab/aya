@@ -624,5 +624,29 @@ namespace aya {
 
 		return blob_output;
 	}
+
+	auto CPhoto::convert_pngIndexed() -> scl::blob {
+		// create vector for lodepng --------------------@/
+		std::vector<unsigned char> dotbuffer(dimensions() * 4);
+		for(int i=0; i<dimensions(); i++) {
+			auto color = m_palette.at(m_bmpdata.at(i).a);
+			dotbuffer.at((i*4) + 0) = color.r;
+			dotbuffer.at((i*4) + 1) = color.g;
+			dotbuffer.at((i*4) + 2) = color.b;
+			dotbuffer.at((i*4) + 3) = 255;
+		//	dotbuffer.at((i*4) + 3) = color.a;
+		}
+
+		//if there's an error, display it ---------------@/
+		std::vector<uint8_t> filebuffer;
+		unsigned error = lodepng::encode(filebuffer, dotbuffer, width(), height());
+
+		if(error) {
+			std::printf("encoder error: %s\n",lodepng_error_text(error));
+			std::exit(-1);
+		}
+
+		return scl::blob(filebuffer);
+	};
 };
 

@@ -392,7 +392,7 @@ auto aya::marisa_graphfmt::getBPP(int format) -> int {
 auto aya::patchu_graphfmt::getBPP(int format) -> int {
 	auto format_id = patchu_graphfmt::getID(format);
 	if(!patchu_graphfmt::isValid(format)) {
-		puts("imgconv::patchu_graphfmt_getBPP(fmt): error: invalid format");
+		puts("aya::patchu_graphfmt_getBPP(fmt): error: invalid format");
 		std::exit(-1);
 	}
 
@@ -414,54 +414,42 @@ auto aya::patchu_graphfmt::getBPP(int format) -> int {
 auto aya::narumi_graphfmt::getBPP(int format) -> int {
 	auto format_id = narumi_graphfmt::getID(format);
 	if(!narumi_graphfmt::isValid(format)) {
-		puts("imgconv::narumi_graphfmt_getBPP(fmt): error: invalid format");
+		puts("aya::narumi_graphfmt_getBPP(fmt): error: invalid format");
 		std::exit(-1);
 	}
 
-	int bpp = 0;
-	switch(format_id) {
-		case narumi_graphfmt::i4: { bpp = 4; break; }
-		case narumi_graphfmt::i8: { bpp = 8; break; }
-		case narumi_graphfmt::rgb: {
-			bpp = 16;
-			break;
-		}
-		default: break;
-	}
-	return bpp;
+	const std::map<int,int> bpp_table = {
+		{ i4, 4 },
+		{ i8, 8 },
+		{ rgb, 16 },
+	};
+	return bpp_table.at(format_id);
 }
 auto aya::alice_graphfmt::getBPP(int format) -> int {
-	auto format_id = alice_graphfmt::getID(format);
-	if(!alice_graphfmt::isValid(format)) {
-		puts("imgconv::alice_graphfmt_getBPP(fmt): error: invalid format");
+	auto format_id = getID(format);
+	if(!isValid(format)) {
+		puts("aya::alice_graphfmt_getBPP(fmt): error: invalid format");
 		std::exit(-1);
 	}
 
-	int bpp = 0;
-	switch(format_id) {
-		case alice_graphfmt::i4: { bpp = 4; break; }
-		case alice_graphfmt::i8: { bpp = 8; break; }
-		case alice_graphfmt::rgb: {
-			bpp = 16;
-			break;
-		}
-		default: break;
-	}
-	return bpp;
+	const std::map<int,int> bpp_table = {
+		{ i4, 4 },
+		{ i8, 8 },
+		{ rgb, 16 },
+	};
+	return bpp_table.at(format_id);
 }
 auto aya::hourai_graphfmt::getBPP(int format) -> int {
 	auto format_id = hourai_graphfmt::getID(format);
 	if(!hourai_graphfmt::isValid(format)) {
-		puts("imgconv::hourai_graphfmt_getBPP(fmt): error: invalid format");
+		puts("aya::hourai_graphfmt_getBPP(fmt): error: invalid format");
 		std::exit(-1);
 	}
 
-	int bpp = 0;
-	switch(format_id) {
-		case hourai_graphfmt::i2: { bpp = 2; break; }
-		default: break;
-	}
-	return bpp;
+	const std::map<int,int> bpp_table = {
+		{ i2, 2 },
+	};
+	return bpp_table.at(format_id);
 }
 
 auto aya::version_get() -> CAyaVersion {

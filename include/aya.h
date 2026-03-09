@@ -92,7 +92,10 @@ namespace aya {
 		}
 	};
 	namespace alice_graphfmt {
-		enum { i4,i8,rgb,len };
+		enum {
+			i4,i8,rgb,len,
+			compressed = (1<<8),
+		};
 		auto getBPP(int format) -> int;
 		constexpr auto getID(int format) -> int { return format & 0xFF; }
 		constexpr auto isValid(int format) -> bool {
@@ -426,6 +429,7 @@ class aya::CPhoto {
 		constexpr auto width() const -> int { return m_width; }
 		constexpr auto height() const -> int { return m_height; }
 		constexpr auto dimensions() const -> int { return width() * height(); }
+		constexpr auto palette() -> std::array<aya::CColor,256>& { return m_palette; }
 
 		auto clear(aya::CColor color) -> void;
 		auto dot_inRange(int x,int y) const -> bool;
@@ -461,6 +465,8 @@ class aya::CPhoto {
 		auto convert_rawPGI(int format) const -> scl::blob;
 		auto convert_rawNGI(int format) const -> scl::blob;
 		auto convert_twiddled(int format) const -> scl::blob;
+
+		auto convert_pngIndexed() -> scl::blob;
 
 		CPhoto();
 		CPhoto(std::string filename,bool paletted = false, bool opaque_pal=false);
