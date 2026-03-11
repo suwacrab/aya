@@ -1535,7 +1535,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			filepart.pos_x = agb_subframe.m_posX;
 			filepart.pos_y = agb_subframe.m_posY;
 			filepart.attr = attr;
-			filepart.cel_idPerFrame = cel_id;
+			filepart.cel_idPerFrame = 0; // gets overwritten
 			filepart.cel_idPerAnim = cel_id;
 			filepart.cel_idPerBank = numtotal_cels;
 			filepart.size_xy = 
@@ -1543,14 +1543,17 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 				(agb_subframe.m_sizeY) << 8;
 
 			// write cels -------------------------------@/
+			size_t subframe_celSize = 0;
 			auto celtable = subframephoto.rect_split(8,8);
 			for(auto cel : celtable) {
 				auto bmpblob = cel->convert_rawAGI(format);
 				blob_segBmp.write_blob(bmpblob);
 				cel_id += 1;
 				numtotal_cels += 1;
-				cel_size += bmpblob.size();
+				subframe_celSize += bmpblob.size();
 			}
+			cel_size += subframe_celSize;
+			filepart.cel_idPerFrame = subframe_celSize / 32;
 
 			filepart_list.push_back(filepart);
 		}
@@ -1578,11 +1581,11 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 
 			// queue up parts to write ------------------@/
 			std::vector<aya::ALICE_AGEFILE_PART> partqueue;
+			int celidbase_PF = 0;
 			for(auto part : frame.m_parts) {
 				auto photoinfo = tbl_photoinfo.at(part.m_imgID);
 				auto filepart_list = photoinfo.filepart_list;
 				
-				int celidbase_PF = 0;
 				for(const auto& srcpart : filepart_list) {
 					aya::ALICE_AGEFILE_PART filepart = srcpart;
 					const int sizedat = filepart.size_xy;
@@ -1612,7 +1615,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 
 					int celid_PF_offset = celidbase_PF;
 					celidbase_PF += filepart.cel_idPerFrame;
-					filepart.cel_idPerFrame += celid_PF_offset;
+					filepart.cel_idPerFrame = celid_PF_offset;
 
 					partqueue.push_back(filepart);
 				}
@@ -1655,8 +1658,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 				fileframe.loaddesc_PF_totalsize += celsize / 32;
 
 				aya::ALICE_AGEFILE_LOADDESC fileloaddesc_PF = {};
-				fileloaddesc_PF.size = celsize;
-				fileloaddesc_PF.src_celOffset = celoffset;
+				fileloaddesc_PF.size = celsize / 32;
+				fileloaddesc_PF.src_celOffset = celoffset / 32;
 				blob_segLoaddesc.write_raw(&fileloaddesc_PF,sizeof(fileloaddesc_PF));
 				numtotal_loaddesc++;
 			}
@@ -1677,8 +1680,8 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			filepattern.loaddesc_PP_totalsize += celsize / 32;
 
 			aya::ALICE_AGEFILE_LOADDESC fileloaddesc_PF = {};
-			fileloaddesc_PF.size = celsize;
-			fileloaddesc_PF.src_celOffset = celoffset;
+			fileloaddesc_PF.size = celsize / 32;
+			fileloaddesc_PF.src_celOffset = celoffset / 32;
 			blob_segLoaddesc.write_raw(&fileloaddesc_PF,sizeof(fileloaddesc_PF));
 			numtotal_loaddesc++;
 		}
