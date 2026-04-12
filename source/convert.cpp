@@ -1690,6 +1690,20 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 		blob_segPattern.write_raw(&filepattern,sizeof(filepattern));
 	}
 
+	// write final loaddesc -----------------------------@/
+	bmpsection_sizeOrig = blob_segBmp.size();
+	
+	{
+		auto celsize = bmpsection_sizeOrig;
+		auto celoffset = 0;
+
+		aya::ALICE_AGEFILE_LOADDESC fileloaddesc_PB = {};
+		fileloaddesc_PB.size = celsize / 32;
+		fileloaddesc_PB.src_celOffset = celoffset / 32;
+		blob_segLoaddesc.write_raw(&fileloaddesc_PB,sizeof(fileloaddesc_PB));
+		numtotal_loaddesc++;
+	}
+
 	// write palettes -----------------------------------@/
 	if(aya::alice_graphfmt::getBPP(format) <= 8) {
 		int color_count = 1 << aya::alice_graphfmt::getBPP(format);
@@ -1703,8 +1717,6 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	}
 
 	// pad data -----------------------------------------@/
-	bmpsection_sizeOrig = blob_segBmp.size();
-
 	blob_segLoaddesc.pad(pad_size,pad_word);
 	blob_segPattern.pad(pad_size,pad_word);
 	blob_segStrings.pad(pad_size,pad_word);
@@ -1737,7 +1749,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 	header.offset_segBmp = offset_segBmp;
 	header.offset_segPalet = offset_segPalet;
 
-	header.loaddesc_PB_idx = numtotal_loaddesc;
+	header.loaddesc_PB_idx = numtotal_loaddesc-1;
 	header.loaddesc_PB_count = 1;
 	header.loaddesc_PB_totalsize = bmpsection_sizeOrig / 32;
 
