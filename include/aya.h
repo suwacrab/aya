@@ -391,7 +391,7 @@ struct aya::CColor {
 	void write_rgb565(scl::blob& out_blob) const;
 	void write_rgb5a1(scl::blob& out_blob,int test = 254) const;
 	void write_rgb5a1_sat(scl::blob& out_blob,bool msb) const;
-	void write_rgb5a1_agb(scl::blob& out_blob,bool msb = false) const;
+	void write_rgb5a1_agb(scl::blob& out_blob) const;
 	void write_argb4(scl::blob& out_blob) const;
 
 	constexpr auto rawdata() const -> uint32_t {

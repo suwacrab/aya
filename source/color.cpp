@@ -31,12 +31,16 @@ namespace aya {
 		if(msb) num |= 0x8000;
 		out_blob.write_be_u16(num);
 	}
-	void CColor::write_rgb5a1_agb(scl::blob& out_blob,bool msb) const {
+	void CColor::write_rgb5a1_agb(scl::blob& out_blob) const {
 		const auto short_r = ((uint32_t)r)>>3;
-		const auto short_g = ((uint32_t)g)>>3;
+		const auto short_g = ((uint32_t)g)>>2;
 		const auto short_b = ((uint32_t)b)>>3;
-		uint16_t num = short_r | (short_g<<5) | (short_b<<10);
-		if(msb) num |= 0x8000;
+
+		int g_real = short_g >> 1;
+		int g_msb = short_g & 1;
+
+		uint16_t num = short_r | (g_real<<5) | (short_b<<10) | (g_msb<<15);
+	//	if(msb) num |= 0x8000;
 		out_blob.write_u16(num);
 	}
 	void CColor::write_rgb5a1(scl::blob& out_blob,int test) const {
