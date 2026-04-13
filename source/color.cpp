@@ -32,6 +32,10 @@ namespace aya {
 		out_blob.write_be_u16(num);
 	}
 	void CColor::write_rgb5a1_agb(scl::blob& out_blob) const {
+		/*
+			* supposedly, AGB is RGB565, with g's 6th bit stored in the MSB.
+			* ds mayy be the same, but with the 6th bit displayed ?
+		*/
 		const auto short_r = ((uint32_t)r)>>3;
 		const auto short_g = ((uint32_t)g)>>2;
 		const auto short_b = ((uint32_t)b)>>3;
