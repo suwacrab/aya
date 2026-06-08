@@ -141,7 +141,7 @@ namespace aya {
 
 	auto CPhoto::palet_clear(aya::CColor color) -> void {
 		for(int i=0; i<256; i++) {
-			palet_getRaw(i) = color;
+			palet_set(i,color);
 		}
 	}
 	auto CPhoto::palet_getRaw(int pen) -> aya::CColor& {
@@ -157,6 +157,14 @@ namespace aya {
 		}
 		return palet_getRawC(pen);
 	}
+	auto CPhoto::palet_set(int pen, aya::CColor color) -> void {
+		palet_getRaw(pen) = color;
+	}
+	auto CPhoto::palet_loadFromPhoto(const CPhoto& srcpic) -> void {
+		for(int i=0; i<256; i++) {
+			palet_set(i,srcpic.palet_get(i));
+		}
+	}
 
 	auto CPhoto::dot_getTwiddledIdx(int x,int y) const -> size_t {
 		auto z = aya::twiddled_index(x,y,width(),height());
@@ -171,9 +179,9 @@ namespace aya {
 		if(y < 0 || y >= height()) return false;
 		return true;
 	}
-	auto CPhoto::dot_setRGB(int x,int y,aya::CColor color) -> void {
+	auto CPhoto::dot_set(int x,int y,aya::CColor color) -> void {
 		if(!dot_inRange(x,y)) {
-			std::printf("aya::CPhoto::dot_setRGB(%4d,%4d,#%08X): warning: coord out of range\n",
+			std::printf("aya::CPhoto::dot_set(%4d,%4d,#%08X): warning: coord out of range\n",
 				x,y,color.rawdata()
 			);
 		} else {
@@ -189,6 +197,66 @@ namespace aya {
 			return aya::CColor(0,0,0,0);
 		}
 		return dot_getRawC(x,y);
+	}
+
+	auto CPhoto::img_flip(int flip) const -> std::shared_ptr<CPhoto> {
+		auto new_pic = std::make_shared<CPhoto>(width(),height());
+		new_pic->palet_loadFromPhoto(*this);
+
+		const bool flip_x = flip & 1;
+		const bool flip_y = (flip >> 1);
+
+		for(int y=0; y<height(); y++) {
+			int fy = flip_y ? (height()-y-1) : y;
+			for(int x=0; x<width(); x++) {
+				int fx = flip_x ? (width()-x-1) : x;
+				new_pic->dot_set(x,y,dot_get(fx,fy));
+			}
+		}
+
+		return new_pic;
+	}
+	auto CPhoto::img_rotate(int deg90) const -> std::shared_ptr<CPhoto> {
+		switch(deg90) {
+			case 0: {
+				auto new_pic = std::make_shared<CPhoto>(width(),height());
+				new_pic->palet_loadFromPhoto(*this);
+
+				return new_pic;
+			}
+			case 1: {
+				auto new_pic = std::make_shared<CPhoto>(height(),width());
+				new_pic->palet_loadFromPhoto(*this);
+				// new y coordinate is old x
+				// new x coordinate is flipped old y
+
+				for(int y=0; y<height(); y++) {
+					for(int x=0; x<width(); x++) {
+						int new_x = height()-y-1;
+						int new_y = x;
+
+						auto old_dot = dot_get(x,y);
+						new_pic->dot_set(new_x,new_y,old_dot);
+					}
+				}
+
+				return new_pic;
+				break;
+			}
+			case 2: {
+				return img_flip(aya::ImgFlip::XY);
+				break;
+			}
+			case 3: {
+				return img_rotate(1)->img_flip(aya::ImgFlip::XY);
+				break;
+			}
+		}
+
+		std::printf("aya::CPhoto::img_rotate(): error: invalid rotation %d\n",
+			deg90
+		);
+		std::exit(-1);
 	}
 
 	auto CPhoto::rect_split(int size_x, int size_y, int count) -> std::vector<std::shared_ptr<CPhoto>> {
@@ -245,7 +313,7 @@ namespace aya {
 		for(int iy=0; iy<h; iy++) {
 			for(int ix=0; ix<w; ix++) {
 				auto color = dot_getRawC(sx+ix,sy+iy);
-				outpic.dot_setRGB(dx+ix,dy+iy,color);
+				outpic.dot_set(dx+ix,dy+iy,color);
 			}
 		}
 	}
@@ -260,10 +328,11 @@ namespace aya {
 		}
 
 		auto new_pic = std::make_shared<CPhoto>(w,h);
+		new_pic->palet_loadFromPhoto(*this);
 		for(int iy=0; iy<h; iy++) {
 			for(int ix=0; ix<w; ix++) {
 				auto color = dot_getRawC(x+ix,y+iy);
-				new_pic->dot_setRGB(ix,iy,color);
+				new_pic->dot_set(ix,iy,color);
 			}
 		}
 		

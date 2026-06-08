@@ -200,6 +200,15 @@ namespace aya {
 			Vertical,
 		};
 	};
+
+	namespace ImgFlip {
+		enum {
+			None = 0,
+			X = 1,
+			Y = 2,
+			XY = 3
+		};
+	};
 };
 
 struct aya::MARISA_MGIFILE_HEADER {
@@ -433,11 +442,16 @@ class aya::CPhoto {
 
 		auto clear(aya::CColor color) -> void;
 		auto dot_inRange(int x,int y) const -> bool;
-		auto dot_setRGB(int x,int y,aya::CColor color) -> void;
+		auto dot_set(int x,int y,aya::CColor color) -> void;
 		auto dot_get(int x,int y) const -> aya::CColor;
+
+		auto img_flip(int flip) const -> std::shared_ptr<CPhoto>;
+		auto img_rotate(int deg90) const -> std::shared_ptr<CPhoto>;
 
 		auto palet_clear(aya::CColor color) -> void;
 		auto palet_get(int pen) const -> aya::CColor;
+		auto palet_set(int pen, aya::CColor color) -> void;
+		auto palet_loadFromPhoto(const CPhoto& srcpic) -> void;
 
 		auto rect_blit(CPhoto& outpic,int sx,int sy,int dx,int dy,int w=0,int h=0) const -> void;
 		auto rect_split(int size_x, int size_y, int count = -1) -> std::vector<std::shared_ptr<CPhoto>>;

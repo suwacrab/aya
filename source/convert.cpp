@@ -1967,6 +1967,10 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 				imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
 				auto cels = srcpic->rect_split(8,8);
 				for(auto cel : cels) {
+					/*
+					auto nucel = cel->img_rotate(1);
+					auto bmpblob = nucel->convert_rawAGI(format);
+					*/
 					auto bmpblob = cel->convert_rawAGI(format);
 					blob_bmpsection.write_blob(bmpblob);
 				}
