@@ -310,7 +310,7 @@ are little sub-images, cut from a larger image.
 For this reason, it's referred to as part-based animation, as the main point of
 this format is the fact that parts can be repositioned and reused throughout a
 bank, both to save CPU and to save VRAM usage. For a visualization, see how
-games like [Princess Crown]() or Yoshi's Island are animated.
+games like [Princess Crown](https://youtu.be/-Dm4XcPnZq8?t=629) or Yoshi's Island are animated.
 
 To deal with supporting the reuse of parts, AGE files require the use of data
 structures referred to as "load description tables". These contain an array of
