@@ -127,6 +127,52 @@ local ls_agi_header = {
 	{ 'bitmap section offset','int' };
 }
 
+local ls_age_header = {
+	{ 'header ("AGE\\0")','char',4 };
+	{ 'format','int' };
+	{ 'per-bank load description index', 'short' };
+	{ 'per-bank load description length', 'short' };
+	{ 'per-bank load description data size (units of 32 bytes)', 'short' };
+	{ 'pattern count','short' };
+	{ 'load description section offset','int' };
+	{ 'pattern section offset','int' };
+	{ 'string section offset','int' };
+	{ 'frame section offset','int' };
+	{ 'part section offset','int' };
+	{ 'bitmap section offset','int' };
+	{ 'palette section offset','int' };
+}
+local ls_age_loaddesc = {
+	{ 'size (units of 32 bytes)','short' };
+	{ 'source cel offset (units of 32 bytes)','short' };
+}
+local ls_age_pattern = {
+	{ 'per-pattern load description index', 'short' };
+	{ 'per-pattern load description length', 'short' };
+	{ 'per-pattern load description data size (units of 32 bytes)', 'short' };
+	{ 'starting index of pattern\'s frames in frame section', 'short' };
+	{ 'number of frames', 'short' };
+	{ 'filler (0)', 'short' };
+	{ "starting offset of pattern's name in string section",'int' };
+}
+local ls_age_frame = {
+	{ 'per-frame load description index', 'short' };
+	{ 'per-frame load description length', 'short' };
+	{ 'per-frame load description data size (units of 32 bytes)', 'short' };
+	{ 'delay until next frame is displayed (1==1 frame)','short' };
+	{ 'frame\'s part count','short' };
+	{ 'frame\'s part indices, one for each mirror orientation','short','4' };
+	{ 'filler (0)', 'short' };
+	{ "starting offset of frame's name in string section",'int' };
+}
+local ls_age_part = {
+	{ 'offset for displaying (X,Y)', 'short',2 };
+	{ 'OAM attributes*','ushort' };
+	{ 'cel ID (per-frame)', 'ushort' };
+	{ 'cel ID (per-pattern)', 'ushort' };
+	{ 'cel ID (per-bank)', 'ushort' };
+	{ 'bitmap dimensions (X,Y)', 'uchar',2 };}
+
 local ls_hgi_header = {
 	{ 'header ("HGI\\0")','char',4 };
 	{ 'bitmap dimensions (X,Y)', 'short', 2 };
@@ -200,9 +246,15 @@ print_flist(ls_aga_header)
 print_flist(ls_aga_frame)
 print_flist(ls_aga_subframe)
 print_flist(ls_agm_header)
-print_flist(ls_agi_header)]]
+print_flist(ls_agi_header)
 print_flist(ls_hgi_header)
 print_flist(ls_hgm_header)
+]]
+print_flist(ls_age_header)
+print_flist(ls_age_loaddesc)
+print_flist(ls_age_pattern)
+print_flist(ls_age_frame)
+print_flist(ls_age_part)
 
 end
 

@@ -1535,7 +1535,7 @@ auto aya::convert_fileAGE(const std::string& filename_xml, const aya::CAliceAGEC
 			filepart.pos_x = agb_subframe.m_posX;
 			filepart.pos_y = agb_subframe.m_posY;
 			filepart.attr = attr;
-			filepart.cel_idPerFrame = 0; // gets overwritten
+			filepart.cel_idPerFrame = 0; // gets overwritten later, dont worry!
 			filepart.cel_idPerAnim = cel_id;
 			filepart.cel_idPerBank = numtotal_cels;
 			filepart.size_xy = 
