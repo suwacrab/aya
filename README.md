@@ -362,6 +362,8 @@ fn vram_loadAGEFrame(bank,patternID,frameID,output_ptr)
 end
 ```
 
+The .AGE file structure is the following:
+
 ```
 *	header section
 	0x00 | char[4]   | header ("AGE\0")
@@ -416,6 +418,8 @@ end
 	0x00 | short[]   | palette data
 ```
 
+---
+
 AGM files are used for storing backgrounds. They each contain a background
 tilemap, a palette, and bitmap data.
 
@@ -438,6 +442,8 @@ tilemap, a palette, and bitmap data.
 *	bitmap section
 	0x00 | char[]    | bitmap data
 ```
+
+---
 
 AGI files are bitmaps that contain one, static image. Optionally, their bitmap
 data may be stored split into multiple sub-images. (e.g for fonts, image
