@@ -288,7 +288,7 @@ AGA files contain sprite animations. In structure, they're a bit similar to
 ```
 
 -	`*`: To ease computations during drawing, each frame contains 4 lists of subframes, with one for each possible sprite orientation. 0 is non-flipped, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
--	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
+-	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 (OBJ color mode & shape) of OAM attribute 0. Bits 12-15 correspond to bits 12-15 (OBJ size & flip) of OAM attribute 1.
 -	`***`: The character number gets incremented by the character count for each object. That is, if it were a 8-frame 8x8 sprite, subframe 0 would have character number 0, subframe 1 would have charnum 1...
 
 ---
@@ -420,7 +420,7 @@ The .AGE file structure is the following:
 ```
 
 -	`*`: To ease computations during drawing, each frame contains 4 arrays of parts, with one precomputed for each possible sprite orientation. 0 is no flip, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
--	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
+-	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 (OBJ color mode & shape) of OAM attribute 0. Bits 12-15 correspond to bits 12-15 (OBJ size & flip) of OAM attribute 1.
 
 ---
 
