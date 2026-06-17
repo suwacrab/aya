@@ -402,13 +402,13 @@ The .AGE file structure is the following:
 		0x04 | short     | per-frame load description data size (units of 32 bytes)
 		0x06 | short     | delay until next frame is displayed (1==1 frame)
 		0x08 | short     | frame's part count
-		0x0A | short[4]  | frame's part indices, one for each mirror orientation
+		0x0A | short[4]  | frame's part indices, one for each mirror orientation*
 		0x12 | short     | filler (0)
 		0x14 | int       | starting offset of frame's name in string section
 *	part section (array)
 	*	for each part, it's the following:
 		0x00 | short[2]  | offset for displaying (X,Y)
-		0x04 | ushort    | OAM attributes*
+		0x04 | ushort    | OAM attributes**
 		0x06 | ushort    | cel ID (per-frame)
 		0x08 | ushort    | cel ID (per-pattern)
 		0x0A | ushort    | cel ID (per-bank)
@@ -418,6 +418,9 @@ The .AGE file structure is the following:
 *	palette section
 	0x00 | short[]   | palette data
 ```
+
+-	`*`: To ease computations during drawing, each frame contains 4 arrays of parts, with one precomputed for each possible sprite orientation. 0 is no flip, 1 is horizontal-flipped, 2 is vertical-flipped, 3 is HV-flipped.
+-	`**`: Bits 0-3 are the palette number. Bits 5-7 correspond to bits 13-15 of OAM attribute 0. Bits 12-15 correspond to bits 12-15 of OAM attribute 1.
 
 ---
 
