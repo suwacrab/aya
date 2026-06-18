@@ -54,6 +54,7 @@ int main(int argc,const char* argv[]) {
 
 	int param_agm_celsizeX = 0;
 	int param_agm_celsizeY = 0;
+	int param_agm_paletoffset = 0;
 
 	int param_hgi_subimageX = 0;
 	int param_hgi_subimageY = 0;
@@ -150,6 +151,9 @@ int main(int argc,const char* argv[]) {
 	if(argparser.arg_isValid("-agm_celsize",2)) {
 		param_agm_celsizeX = std::stoi(argparser.arg_get("-agm_celsize",2).at(1));
 		param_agm_celsizeY = std::stoi(argparser.arg_get("-agm_celsize",2).at(2));
+	}
+	if(argparser.arg_isValid("-agm_paletoffset",1)) {
+		param_agm_paletoffset = std::stoi(argparser.arg_get("-agm_paletoffset",1).at(1));
 	}
 
 	// HGI-specific
@@ -454,6 +458,7 @@ int main(int argc,const char* argv[]) {
 			.raw_cels = false,
 			.cel_sizeX = param_agm_celsizeX,
 			.cel_sizeY = param_agm_celsizeY,
+			.palet_offset = param_agm_paletoffset
 		};
 		auto pic_blob = pic.convert_fileAGM(info);
 		if(!pic_blob.file_send(param_outfile)) {
@@ -563,6 +568,8 @@ static void disp_usage() {
 		"\t\t-agi_splitcel           divides each subimage into cels\n"
 		"\t.AGM specifics:\n"
 		"\t\tformats: i4,i8,rgb\n"
+		"\t\t-agm_celsize <x> <y>    treats each cel as <X,Y>px cels before later dividing to 8x8\n"
+		"\t\t-agm_paletoffset <p>    adds <p> to each tile's palette index\n"
 		"\t.HGM specifics:\n"
 		"\t\tformats: i2\n"
 		"\t.HGI specifics:\n"

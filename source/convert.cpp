@@ -1950,7 +1950,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 
 			// write tile to bmp/map
 			if(found_used) {
-				blob_mapsection.write_u16(tile_index | (flip_index<<10));
+				blob_mapsection.write_u16((tile_index | (flip_index<<10)) | (info.palet_offset << 12));
 			} else {
 				int index = subimage_count;
 
@@ -1974,7 +1974,7 @@ auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl:
 					auto bmpblob = cel->convert_rawAGI(format);
 					blob_bmpsection.write_blob(bmpblob);
 				}
-				blob_mapsection.write_u16(index);
+				blob_mapsection.write_u16(index | (info.palet_offset << 12));
 				subimage_count++;
 			}
 

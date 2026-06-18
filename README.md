@@ -242,6 +242,8 @@ The `format` field for the following structures is defined as such:
 -	`1`: I8 / 256-color graphics. Each byte corresponds to one pixel.
 -	`2`: rgb / 32,768-color graphics. Each `uint16` corresponds to one pixel,
     in the format XBBBBBGGGGGRRRRR.
+-	Bit 8 of the format flag is the compression toggle. (1 if data is
+	compressed)
 
 ### GBA Image Formats
 ---

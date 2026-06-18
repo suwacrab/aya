@@ -163,6 +163,7 @@ namespace aya {
 		bool raw_cels;
 		int cel_sizeX;
 		int cel_sizeY;
+		int palet_offset;
 	};
 	struct CHouraiHGIConvertInfo {
 		bool do_compress;
