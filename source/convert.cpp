@@ -1954,6 +1954,7 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 	json_validate("layers");
 	json_validate("palettes");
 
+	const int layer_count = jsondoc["header"]["layer_count"].GetInt();
 	const int map_width = jsondoc["header"]["width"].GetInt();
 	const int map_height = jsondoc["header"]["height"].GetInt();
 	const int map_widthHW = map_width * cel_sizeCelX;
@@ -2054,9 +2055,15 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 
 	// write to final tilemap ---------------------------@/
 	if(!info.ignore_map) {
-	//	std::puts("getting src layer");
+		if(info.kmap_layer > 0 || info.kmap_layer >= layer_count) {
+			std::printf(
+				"aya::CPhoto::convert_fileKMPtoAGM(): error: specified layer (%d) is out of range of map layers.\n",
+				info.kmap_layer
+			);
+			std::exit(-1);
+		}
 		auto& src_layer = jsondoc["layers"][info.kmap_layer];
-	//	std::puts("got src layer");
+
 		for(int y=0; y<map_heightHW; y++) {
 			for(int x=0; x<map_widthHW; x++) {
 			//	std::puts("src tile: check");
@@ -2073,9 +2080,9 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 				int tile_flipV = src_tile["attribute"]["flipV"].GetBool();
 				if(tile_name >= metatilemap.size()) {
 					std::printf(
-						"aya::CPhoto::convert_fileKMPtoAGM(): error: invalid tile name found at map coord [%3d,%3d]\n"
+						"aya::CPhoto::convert_fileKMPtoAGM(): error: invalid tile name (0x%02X) found at map coord [%3d,%3d]\n"
 						"make sure all tile names are within bounds of the cel image.\n",
-						src_tileX,src_tileY
+						tile_name,src_tileX,src_tileY
 					);
 					std::exit(-1);
 				}
