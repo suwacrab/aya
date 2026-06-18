@@ -1876,7 +1876,314 @@ auto aya::CPhoto::convert_fileAGI(const aya::CAliceAGIConvertInfo& info) -> scl:
 
 	return out_blob;
 }
+auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) -> scl::blob {
+	/*
+	for converting from a kmap .json + a cel image PNG into an AGM, our goal is
+	to use the .PNG as a reference tilemap.
+	
+	we expand the cel image into a metatilemap, where each element contains the
+	info for each of the metatiles of the tile. for example, if the .PNG was
+	full of 16x16 tiles, each element of the metatilemap would contain the info
+	for each of the 4 tiles.
+	
+	to create the final tilemap, we iterate over the kmap tilemap. for each
+	tile, we add the metatiles for that row, flipping if needed.
+	*/
+
+	// validate info struct -----------------------------@/
+	const int format = info.format;
+
+	if((width()%8) != 0 || (height()%8) != 0) {
+		std::puts("aya::CPhoto::convert_fileKMPtoAGM(): error: image dimensions must be multiple of 8!!");
+		std::exit(-1);
+	}
+
+	int cel_sizeX = info.cel_sizeX ? info.cel_sizeX : 8;
+	int cel_sizeY = info.cel_sizeY ? info.cel_sizeY : 8;
+	const int max_numtiles = 1024;
+	const int cel_sizeCelX = cel_sizeX / 8;
+	const int cel_sizeCelY = cel_sizeY / 8;
+	rapidjson::Document jsondoc;
+
+	int subimage_count = 0;
+
+	scl::blob out_blob;
+	scl::blob blob_headersection;
+	scl::blob blob_paletsection;
+	scl::blob blob_mapsection;
+	scl::blob blob_bmpsection;
+
+	std::vector<std::vector<int>> metatilemap;
+
+	// read json file -----------------------------------@/
+	std::string json_str; {
+		std::vector<char> filedata;
+
+		// set file buffer's size -----------------------@/
+		auto json_filename = info.kmap_filename;
+		auto file = std::fopen(json_filename.c_str(),"rb");
+		if(!file) {
+			std::printf("aya::CPhoto::convert_fileKMPtoAGM(): error: unable to open file %s for reading\n",
+				json_filename.c_str()
+			);
+			std::exit(-1);
+		}
+		std::fseek(file,0,SEEK_END);
+		filedata.resize(std::ftell(file));
+
+		// read file to string --------------------------@/
+		std::fseek(file,0,SEEK_SET);
+		std::fread(filedata.data(),filedata.size(),1,file);
+		std::fclose(file);
+
+		filedata.push_back(0); // null terminator
+		json_str = std::string(filedata.data());
+	}
+	jsondoc.Parse(json_str.c_str());
+	
+	auto json_validate = [&](const std::string& keyname) {
+		if(!jsondoc.HasMember(keyname.c_str())) {
+			std::printf("aya: validation error: json file missing key %s\n",
+				keyname.c_str()
+			);
+			std::exit(-1);
+		}
+	};
+	
+	json_validate("header");
+	json_validate("layers");
+	json_validate("palettes");
+
+	const int map_width = jsondoc["header"]["width"].GetInt();
+	const int map_height = jsondoc["header"]["height"].GetInt();
+	const int map_widthHW = map_width * cel_sizeCelX;
+	const int map_heightHW = map_height * cel_sizeCelY;
+	const int map_widthDot = map_width * cel_sizeX;
+	const int map_heightDot = map_height * cel_sizeY;
+
+	// write to metatilemap -----------------------------@/
+	auto imagetable = rect_split(cel_sizeX,cel_sizeY); {
+		std::map<uint64_t,size_t> imghash_map;
+		std::map<uint64_t,size_t> imghash_mapRealIdx;
+		size_t num_processedCel = 0;
+
+		int num_flips = 4;
+
+		for(auto srcpic_unsplit : imagetable) {
+			auto srcpic_table = srcpic_unsplit->rect_split(8,8);
+			std::vector<int> metatile;
+
+			// add tiles to metatile --------------------@/
+			for(auto srcpic : srcpic_table) {
+				const std::array<uint64_t,4> image_hashes = {
+					srcpic->hash_getIndexed(0b00),
+					srcpic->hash_getIndexed(0b01),
+					srcpic->hash_getIndexed(0b10),
+					srcpic->hash_getIndexed(0b11)
+				};
+
+				bool found_used = false;
+				int tile_index = 0;
+				int flip_index = 0;
+
+				for(int fi=0; fi<num_flips; fi++) {
+					const uint64_t hash = image_hashes.at(fi);
+					if(imghash_map.count(hash) > 0) {
+						flip_index = fi;
+						tile_index = imghash_map[hash];
+						found_used = true;
+						
+						if(info.verbose) {
+							auto get_tileXY = [&](int idx, int &x, int &y) {
+								x = cel_sizeX * (idx % map_width);
+								y = cel_sizeY * (idx / map_width);
+							};
+							
+							int orig_index = imghash_mapRealIdx[hash];
+							int src_x,src_y;
+							int cel_x,cel_y;
+							get_tileXY(num_processedCel,src_x,src_y);
+							get_tileXY(orig_index,cel_x,cel_y);
+							if(fi == 0) {
+								// printf("tile hit! (%3d,%3d) == tile %3d\n",src_x,src_y,tile_index);
+							} else {
+								printf("flip hit! (%3d,%3d) == tile %3d (%3d,%3d) [fi=%d]\n",src_x,src_y,orig_index,cel_x,cel_y,fi);
+							}
+						}
+						
+						break;
+					}
+				}
+
+				// write tile to bmp/map
+				if(found_used) {
+					metatile.push_back(tile_index | (flip_index<<10));
+				} else {
+					int index = subimage_count;
+
+					if(index > max_numtiles) {
+						std::printf(
+							"aya::CPhoto::convert_fileKMPtoAGM(): error: cel count over! (cel count: >=%3d)\n"
+							"consider using the 12-bit flag to use more tiles.\n",
+							index
+						);
+						std::exit(-1);
+					}
+
+					imghash_map[image_hashes[0]] = index;
+					imghash_mapRealIdx[image_hashes[0]] = num_processedCel;
+					/*
+					auto nucel = cel->img_rotate(1);
+					auto bmpblob = nucel->convert_rawAGI(format);
+					*/
+					if(!info.ignore_cel) {
+						auto bmpblob = srcpic->convert_rawAGI(format);
+						blob_bmpsection.write_blob(bmpblob);
+					}
+					metatile.push_back(index);
+					subimage_count++;
+				}
+
+				num_processedCel++;
+			}
+		
+			// add metatile to map ----------------------@/
+			metatilemap.push_back(metatile);
+		}
+	}
+
+	// write to final tilemap ---------------------------@/
+	if(!info.ignore_map) {
+	//	std::puts("getting src layer");
+		auto& src_layer = jsondoc["layers"][info.kmap_layer];
+	//	std::puts("got src layer");
+		for(int y=0; y<map_heightHW; y++) {
+			for(int x=0; x<map_widthHW; x++) {
+			//	std::puts("src tile: check");
+				const int src_tileX = x/cel_sizeCelX;
+				const int src_tileY = y/cel_sizeCelY;
+				const int src_tileIdx = src_tileX + src_tileY * map_width;
+				auto& src_tile = src_layer[src_tileIdx];
+			//	std::puts("src tile: OK");
+
+			//	std::puts("metatile: check");
+				int tile_name = src_tile["name"].GetInt();
+				int tile_palet = src_tile["palette"].GetInt();
+				int tile_flipH = src_tile["attribute"]["flipH"].GetBool();
+				int tile_flipV = src_tile["attribute"]["flipV"].GetBool();
+				if(tile_name >= metatilemap.size()) {
+					std::printf(
+						"aya::CPhoto::convert_fileKMPtoAGM(): error: invalid tile name found at map coord [%3d,%3d]\n"
+						"make sure all tile names are within bounds of the cel image.\n",
+						src_tileX,src_tileY
+					);
+					std::exit(-1);
+				}
+				const auto& src_metatile = metatilemap.at(tile_name);
+			//	std::puts("metatile: OK");
+				
+				int src_x = x%cel_sizeCelX;
+				int src_y = y%cel_sizeCelY;
+				if(tile_flipH) src_x = cel_sizeCelX - src_x - 1;
+				if(tile_flipV) src_y = cel_sizeCelY - src_y - 1;
+				
+			//	std::puts("metatile's data: check");
+				int out_tile = src_metatile.at(src_x + src_y*cel_sizeCelX);
+				out_tile ^= tile_flipH << 10;
+				out_tile ^= tile_flipV << 11;
+				out_tile += tile_palet << 12;
+				blob_mapsection.write_u16(out_tile);
+			//	std::puts("metatile's data: Ok");
+			}
+		}
+	}
+
+	// compress, if necessary ---------------------------@/
+	if(info.do_compress && !info.ignore_cel) {
+		// compress bmp section -------------------------@/
+		scl::blob bmpsection_old = blob_bmpsection;
+		blob_bmpsection = aya::compress_spd(bmpsection_old);
+	}
+
+	// create palette -----------------------------------@/
+	if(aya::alice_graphfmt::getBPP(format) <= 8 && !info.ignore_palet) {
+		scl::blob palet_blob;
+		const int palet_count = jsondoc["palettes"].Size();
+		for(int palet=0; palet<palet_count; palet++) {
+			for(int pen=0; pen<16; pen++) {
+				auto& src_color = jsondoc["palettes"][palet]["colors"][pen];
+				auto color = aya::CColor(255,
+					src_color["r"].GetInt(),
+					src_color["g"].GetInt(),
+					src_color["b"].GetInt()
+				);
+				color.write_rgb5a1_agb(blob_paletsection);
+			}
+		}
+	} else {
+		blob_paletsection.write_u32(0);
+	}
+
+	// pad sections out ---------------------------------@/
+	constexpr int header_size = 40;
+	constexpr int pad_word = 0xAA;
+	blob_paletsection.pad(32,pad_word); // pad to nearest 16;
+	blob_mapsection.pad(32,pad_word); // pad to nearest 16;
+	blob_bmpsection.pad(32,pad_word); // pad to nearest 16;
+
+	// create header ------------------------------------@/
+	if(info.verbose) {
+		std::printf("\tCEL section: %.2f K\n",
+			((float)blob_bmpsection.size()) / 1024.0
+		);
+		std::printf("\tCHP section: %.2f K (n.cels == %d)\n",
+			((float)blob_mapsection.size()) / 1024.0,
+			subimage_count
+		);
+	}
+	
+	size_t offset_paletsection = header_size;
+	size_t offset_mapsection = offset_paletsection + blob_paletsection.size();
+	size_t offset_bmpsection = offset_mapsection + blob_mapsection.size();
+
+	aya::ALICE_AGMFILE_HEADER header = {};
+	header.magic[0] = 'A';
+	header.magic[1] = 'G';
+	header.magic[2] = 'M';
+	header.format_flags = format;
+	header.width_dot = map_widthDot;
+	header.width_chr = map_widthHW;
+	header.height_dot = map_heightDot;
+	header.height_chr = map_heightHW;
+	header.palet_size = blob_paletsection.size();
+	header.map_size = blob_mapsection.size();
+	header.bitmap_size = blob_bmpsection.size();
+	header.offset_paletsection = offset_paletsection;
+	header.offset_mapsection = offset_mapsection;
+	header.offset_bmpsection = offset_bmpsection;
+
+	header.format_flags |= info.do_compress ? alice_graphfmt::compressed : 0;
+
+	blob_headersection.write_raw(&header,sizeof(header));
+	blob_headersection.pad(header_size,pad_word);
+
+	if(info.raw_cels) {
+		blob_bmpsection.pad(32 * 256,pad_word);
+		out_blob.write_blob(blob_bmpsection);
+	} else {
+		out_blob.write_blob(blob_headersection);
+		out_blob.write_blob(blob_paletsection);
+		out_blob.write_blob(blob_mapsection);
+		out_blob.write_blob(blob_bmpsection);
+	}
+
+	return out_blob;
+
+}
 auto aya::CPhoto::convert_fileAGM(const aya::CAliceAGMConvertInfo& info) -> scl::blob {
+	if(!info.kmap_filename.empty()) {
+		return convert_fileKMPtoAGM(info);
+	}
 	// validate info struct -----------------------------@/
 	const int format = info.format;
 

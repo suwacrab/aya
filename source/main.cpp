@@ -55,6 +55,11 @@ int main(int argc,const char* argv[]) {
 	int param_agm_celsizeX = 0;
 	int param_agm_celsizeY = 0;
 	int param_agm_paletoffset = 0;
+	std::string param_agm_kmapjson;
+	int param_agm_kmaplayer = 0;
+	bool param_agm_ignorecel = false;
+	bool param_agm_ignoremap = false;
+	bool param_agm_ignorepalet = false;
 
 	int param_hgi_subimageX = 0;
 	int param_hgi_subimageY = 0;
@@ -154,6 +159,21 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-agm_paletoffset",1)) {
 		param_agm_paletoffset = std::stoi(argparser.arg_get("-agm_paletoffset",1).at(1));
+	}
+	if(argparser.arg_isValid("-agm_kmapjson",1)) {
+		param_agm_kmapjson = argparser.arg_get("-agm_kmapjson",1).at(1);
+	}
+	if(argparser.arg_isValid("-agm_kmaplayer",1)) {
+		param_agm_kmaplayer = std::stoi(argparser.arg_get("-agm_kmaplayer",1).at(1));
+	}
+	if(argparser.arg_isValid("-agm_ignorecel")) {
+		param_agm_ignorecel = true;
+	}
+	if(argparser.arg_isValid("-agm_ignoremap")) {
+		param_agm_ignoremap = true;
+	}
+	if(argparser.arg_isValid("-agm_ignorepalet")) {
+		param_agm_ignorepalet = true;
 	}
 
 	// HGI-specific
@@ -458,7 +478,12 @@ int main(int argc,const char* argv[]) {
 			.raw_cels = false,
 			.cel_sizeX = param_agm_celsizeX,
 			.cel_sizeY = param_agm_celsizeY,
-			.palet_offset = param_agm_paletoffset
+			.palet_offset = param_agm_paletoffset,
+			.kmap_filename = param_agm_kmapjson,
+			.kmap_layer = param_agm_kmaplayer,
+			.ignore_cel = param_agm_ignorecel,
+			.ignore_map = param_agm_ignoremap,
+			.ignore_palet = param_agm_ignorepalet,
 		};
 		auto pic_blob = pic.convert_fileAGM(info);
 		if(!pic_blob.file_send(param_outfile)) {
@@ -570,6 +595,8 @@ static void disp_usage() {
 		"\t\tformats: i4,i8,rgb\n"
 		"\t\t-agm_celsize <x> <y>    treats each cel as <X,Y>px cels before later dividing to 8x8\n"
 		"\t\t-agm_paletoffset <p>    adds <p> to each tile's palette index\n"
+		"\t\t-agm_kmapjson <json>    specifies kmap .json to use\n"
+		"\t\t-agm_kmaplayer <l>      specifies layer of the kmap .json to use\n"
 		"\t.HGM specifics:\n"
 		"\t\tformats: i2\n"
 		"\t.HGI specifics:\n"

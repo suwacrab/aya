@@ -164,6 +164,11 @@ namespace aya {
 		int cel_sizeX;
 		int cel_sizeY;
 		int palet_offset;
+		std::string kmap_filename;
+		int kmap_layer;
+		bool ignore_cel;
+		bool ignore_map;
+		bool ignore_palet;
 	};
 	struct CHouraiHGIConvertInfo {
 		bool do_compress;
@@ -468,6 +473,7 @@ class aya::CPhoto {
 		auto convert_fileAGA(const CAliceAGAConvertInfo &info) -> scl::blob;
 		auto convert_fileAGI(const CAliceAGIConvertInfo &info) -> scl::blob;
 		auto convert_fileAGM(const CAliceAGMConvertInfo &info) -> scl::blob;
+		auto convert_fileKMPtoAGM(const CAliceAGMConvertInfo &info) -> scl::blob;
 		auto convert_fileMGI(int format, bool do_compress = true) -> scl::blob;
 		auto convert_filePGI(int format, bool do_compress = true) -> scl::blob;
 		auto convert_filePGA(int format, const std::string& json_filename, bool do_compress = true) -> scl::blob;
