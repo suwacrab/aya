@@ -57,6 +57,7 @@ int main(int argc,const char* argv[]) {
 	int param_agm_paletoffset = 0;
 	std::string param_agm_kmapjson;
 	int param_agm_kmaplayer = 0;
+	int param_agm_kmaprotate = 0;
 	bool param_agm_ignorecel = false;
 	bool param_agm_ignoremap = false;
 	bool param_agm_ignorepalet = false;
@@ -165,6 +166,9 @@ int main(int argc,const char* argv[]) {
 	}
 	if(argparser.arg_isValid("-agm_kmaplayer",1)) {
 		param_agm_kmaplayer = std::stoi(argparser.arg_get("-agm_kmaplayer",1).at(1));
+	}
+	if(argparser.arg_isValid("-agm_kmaprotate",1)) {
+		param_agm_kmaprotate = std::stoi(argparser.arg_get("-agm_kmaprotate",1).at(1));
 	}
 	if(argparser.arg_isValid("-agm_ignorecel")) {
 		param_agm_ignorecel = true;
@@ -481,6 +485,7 @@ int main(int argc,const char* argv[]) {
 			.palet_offset = param_agm_paletoffset,
 			.kmap_filename = param_agm_kmapjson,
 			.kmap_layer = param_agm_kmaplayer,
+			.kmap_rotate = param_agm_kmaprotate,
 			.ignore_cel = param_agm_ignorecel,
 			.ignore_map = param_agm_ignoremap,
 			.ignore_palet = param_agm_ignorepalet,
@@ -548,7 +553,7 @@ int main(int argc,const char* argv[]) {
 }
 
 static void disp_usage() {
-	auto aya_ver = aya::version_get();
+	auto aya_ver = aya::util::version_get();
 
 	std::puts(
 		"aya -i <source_file> <options>\n"
@@ -597,6 +602,7 @@ static void disp_usage() {
 		"\t\t-agm_paletoffset <p>    adds <p> to each tile's palette index\n"
 		"\t\t-agm_kmapjson <json>    specifies kmap .json to use\n"
 		"\t\t-agm_kmaplayer <l>      specifies layer of the kmap .json to use\n"
+		"\t\t-agm_kmaprotate <r>     specifies <r>otation of map&cels (in 90deg increments, 0=0,1=90)\n"
 		"\t.HGM specifics:\n"
 		"\t\tformats: i2\n"
 		"\t.HGI specifics:\n"

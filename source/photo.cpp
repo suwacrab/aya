@@ -8,6 +8,12 @@ namespace aya {
 		m_height = 0;
 		m_bmpdata.clear();
 	}
+	CPhoto::CPhoto(const CPhoto& orig) {
+		m_width = orig.width();
+		m_height = orig.height();
+		m_bmpdata = orig.m_bmpdata;
+		palet_loadFromPhoto(orig);
+	}
 	CPhoto::CPhoto(std::string filename,bool paletted, bool opaque_pal) {
 		// TODO: check superfamiconv to see how they deal with lodepng,
 		// as lodepng's actual """documentation""" is DOGSHIT
@@ -219,10 +225,7 @@ namespace aya {
 	auto CPhoto::img_rotate(int deg90) const -> std::shared_ptr<CPhoto> {
 		switch(deg90) {
 			case 0: {
-				auto new_pic = std::make_shared<CPhoto>(width(),height());
-				new_pic->palet_loadFromPhoto(*this);
-
-				return new_pic;
+				return std::make_shared<CPhoto>(*this);
 			}
 			case 1: {
 				auto new_pic = std::make_shared<CPhoto>(height(),width());

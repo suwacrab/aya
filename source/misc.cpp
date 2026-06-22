@@ -452,18 +452,20 @@ auto aya::hourai_graphfmt::getBPP(int format) -> int {
 	return bpp_table.at(format_id);
 }
 
-auto aya::version_get() -> CAyaVersion {
-	std::string build_date("aya graphic converter");
-	build_date += " ver. ";
-	build_date += __DATE__;
-	build_date += " ";
-	build_date += __TIME__;
+namespace aya::util {
+	auto version_get() -> CAyaVersion {
+		std::string build_date("aya graphic converter");
+		build_date += " ver. ";
+		build_date += __DATE__;
+		build_date += " ";
+		build_date += __TIME__;
 
-	CAyaVersion ver = {};
-	ver.build_date = build_date;
+		CAyaVersion ver = {};
+		ver.build_date = build_date;
 
-	return ver;
-}
+		return ver;
+	}
+};
 
 // https://github.com/KallistiOS/KallistiOS/blob/master/utils/kmgenc/kmgenc.c
 // https://github.com/KallistiOS/KallistiOS/blob/5fc21196104b589ccf4e32222ea1f9650a5612f5/kernel/arch/dreamcast/hardware/pvr/pvr_texture.c#L4

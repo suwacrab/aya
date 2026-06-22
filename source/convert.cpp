@@ -1,7 +1,7 @@
 #include <aya.h>
 #include <functional>
-#include <rapidjson/document.h>
 #include <tinyxml.h>
+#include "json.h"
 
 #include <cmath>
 #include <map>
@@ -19,6 +19,152 @@ struct PGAWorkingTile {
 	int sheet_x,sheet_y;
 	int disp_x,disp_y;
 };
+
+// KMAP JSON ----------------------------------------------------------------@/
+aya::CKmapJSON::CKmapJSON() {
+	m_layercount = 0;
+	m_width = 0;
+	m_height = 0;
+
+	m_layers.clear();
+}
+aya::CKmapJSON::CKmapJSON(std::string src_filename) {
+	auto jsondoc = aya::util::json_loadFile(src_filename);
+	
+	auto json_validate = [&](const std::string& keyname) {
+		if(!jsondoc.HasMember(keyname.c_str())) {
+			std::printf("aya: validation error: json file missing key %s\n",
+				keyname.c_str()
+			);
+			std::exit(-1);
+		}
+	};
+	
+	json_validate("header");
+	json_validate("layers");
+	json_validate("palettes");
+
+	m_paletcount = jsondoc["palettes"].Size();
+	m_layercount = jsondoc["header"]["layer_count"].GetInt();
+	m_width = jsondoc["header"]["width"].GetInt();
+	m_height = jsondoc["header"]["height"].GetInt();
+
+	m_layers.clear();
+	m_palettes.clear();
+
+	// load palettes ------------------------------------@/
+	for(int i_palet=0; i_palet<m_paletcount; i_palet++) {
+		std::vector<aya::CColor> palet;
+		auto& src_palet = jsondoc["palettes"][i_palet];
+
+		// read palettes to vector ----------------------@/
+		const int num_colors = src_palet["colors"].Size();
+		for(int i_pen=0; i_pen<num_colors; i_pen++) {
+			auto& src_color = src_palet["colors"][i_pen];
+			palet.push_back(
+				aya::CColor(255,
+					src_color["r"].GetInt(),
+					src_color["g"].GetInt(),
+					src_color["b"].GetInt()
+				)
+			);
+		}
+
+		m_palettes.push_back(palet);
+	}
+
+	// load tiles ---------------------------------------@/
+	for(int i_layer=0; i_layer<m_layercount; i_layer++) {
+		auto& src_layer = jsondoc["layers"][i_layer];
+		auto new_layer = aya::basic_array2d<CKmapJSONTile>(m_width,m_height);
+
+		// read tiles from iteration's layer ------------@/
+		for(int y=0; y<m_height; y++) {
+			for(int x=0; x<m_width; x++) {
+				const int src_tileIdx = x + y * m_width;
+				auto& src_tile = src_layer[src_tileIdx];
+
+				CKmapJSONTile tile;
+				tile.m_name = src_tile["name"].GetInt();
+				tile.m_palette = src_tile["palette"].GetInt();
+				tile.m_flipH = src_tile["attribute"]["flipH"].GetBool();
+				tile.m_flipV = src_tile["attribute"]["flipV"].GetBool();
+				new_layer.at(x,y) = tile;
+			}
+		}
+
+		m_layers.push_back(new_layer);
+	}
+}
+
+auto aya::CKmapJSON::transform_flip(bool flip_h, bool flip_v, bool modify_attrib) -> void {
+	for(int i_layer=0; i_layer<m_layercount; i_layer++) {
+		auto new_layer = layer_get(i_layer).transform_flip(flip_h,flip_v);
+		if(modify_attrib) {
+			for(int y=0; y<height(); y++) {
+				for(int x=0; x<width(); x++) {
+					auto& tile = new_layer.at(x,y);
+					if(flip_h) tile.m_flipH = !tile.m_flipH;
+					if(flip_v) tile.m_flipV = !tile.m_flipV;
+				}
+			}
+		}
+
+		layer_get(i_layer) = new_layer;
+	}
+}
+auto aya::CKmapJSON::transform_rotate(int deg90) -> void {
+	switch(deg90) {
+		default: {
+			std::printf("aya::CKmapJSON::transform_rotate(): error: invalid rotation %d\n",
+				deg90
+			);
+			std::exit(-1);
+			break;
+		}
+		case 0: { break; }
+		case 1: {
+			// edit all layers --------------------------@/
+			for(int i_layer = 0; i_layer<m_layercount; i_layer++) {
+				auto new_layer = layer_get(i_layer);
+				new_layer = new_layer.transform_rotate(1);
+
+				// rotate hflip/vflip attributes --------@/
+				for(int y=0; y<new_layer.height(); y++) {
+					for(int x=0; x<new_layer.width(); x++) {
+						auto& tile = new_layer.at(x,y);
+						bool flip_h = tile.m_flipH;
+						bool flip_v = tile.m_flipV;
+						tile.m_flipH = flip_v;
+						tile.m_flipV = flip_h;
+					}
+				}
+
+				layer_get(i_layer) = new_layer;
+			}
+
+			// rotate new dimensions ----------------------------@/
+			if((deg90%2) == 1) {
+				int new_width = height();
+				int new_height = width();
+				m_width = new_width;
+				m_height = new_height;
+			}
+
+			break;
+		}
+		case 2: {
+			transform_flip(true,true,false);
+			break;
+		}
+		case 3: {
+			transform_rotate(1);
+			transform_flip(true,true,false);
+		//	new_layer = new_layer.transform_rotate(1)->transform_flip(true,true);
+			break;
+		}
+	}
+}
 
 // working frames -----------------------------------------------------------@/
 auto aya::CWorkingFrame::subframe_get(size_t index) -> aya::CWorkingSubframe& {
@@ -60,32 +206,7 @@ auto aya::CWorkingFrameList::frame_get(size_t index) -> aya::CWorkingFrame& {
 }
 auto aya::CWorkingFrameList::create_fromAseJSON(aya::CPhoto& baseimage, const std::string& json_filename, CWorkingFrameCreateInfo createinfo) -> void {
 	m_frames.clear();
-	rapidjson::Document jsondoc;
-
-	// load json from file ------------------------------@/
-	std::string json_str; {
-		std::vector<char> filedata;
-
-		// set file buffer's size
-		auto file = std::fopen(json_filename.c_str(),"rb");
-		if(!file) {
-			std::printf("aya::CWorkingFrameList::create_fromAseJSON(): error: unable to open file %s for reading\n",
-				json_filename.c_str()
-			);
-			std::exit(-1);
-		}
-		std::fseek(file,0,SEEK_END);
-		filedata.resize(std::ftell(file));
-
-		// read file to string
-		std::fseek(file,0,SEEK_SET);
-		std::fread(filedata.data(),filedata.size(),1,file);
-		std::fclose(file);
-
-		filedata.push_back(0); // null terminator
-		json_str = std::string(filedata.data());
-	}
-	jsondoc.Parse(json_str.c_str());
+	rapidjson::Document jsondoc = aya::util::json_loadFile(json_filename);
 	
 	auto json_validate = [&](const std::string& keyname) {
 		if(!jsondoc.HasMember(keyname.c_str())) {
@@ -504,37 +625,12 @@ auto aya::CPhoto::convert_filePGA(int format, const std::string& json_filename, 
 	scl::blob blob_tilesection;
 	scl::blob blob_bmpsection;
 	scl::blob blob_paletsection;
-	rapidjson::Document jsondoc;
+	rapidjson::Document jsondoc = aya::util::json_loadFile(json_filename);
 
 	std::vector<PGAWorkingFrame> frame_info_wrking;
 
 	const int tilesize = PGA_TILE_SIZE;
 
-	// load json from file ------------------------------@/
-	std::string json_str; {
-		std::vector<char> filedata;
-
-		// set file buffer's size
-		auto file = std::fopen(json_filename.c_str(),"rb");
-		if(!file) {
-			std::printf("aya::CPhoto::convert_filePGA(): error: unable to open file %s for reading\n",
-				json_filename.c_str()
-			);
-			std::exit(-1);
-		}
-		std::fseek(file,0,SEEK_END);
-		filedata.resize(std::ftell(file));
-
-		// read file to string
-		std::fseek(file,0,SEEK_SET);
-		std::fread(filedata.data(),filedata.size(),1,file);
-		std::fclose(file);
-
-		filedata.push_back(0); // null terminator
-		json_str = std::string(filedata.data());
-	}
-	jsondoc.Parse(json_str.c_str());
-	
 	auto json_validate = [&](const std::string& keyname) {
 		if(!jsondoc.HasMember(keyname.c_str())) {
 			std::printf("aya: validation error: json file missing key %s\n",
@@ -1897,13 +1993,22 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 		std::puts("aya::CPhoto::convert_fileKMPtoAGM(): error: image dimensions must be multiple of 8!!");
 		std::exit(-1);
 	}
+	if(info.kmap_rotate < 0 || info.kmap_rotate >= 4) {
+		std::printf("aya::CPhoto::convert_fileKMPtoAGM(): error: invalid rotation %d (should be 0..3)\n",
+			info.kmap_rotate
+		);
+		std::exit(-1);
+	}
 
 	int cel_sizeX = info.cel_sizeX ? info.cel_sizeX : 8;
 	int cel_sizeY = info.cel_sizeY ? info.cel_sizeY : 8;
 	const int max_numtiles = 1024;
 	const int cel_sizeCelX = cel_sizeX / 8;
 	const int cel_sizeCelY = cel_sizeY / 8;
-	rapidjson::Document jsondoc;
+
+	int rotation = info.kmap_rotate;
+	auto kmapdoc = CKmapJSON(info.kmap_filename);
+	kmapdoc.transform_rotate(rotation);
 
 	int subimage_count = 0;
 
@@ -1915,48 +2020,9 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 
 	std::vector<std::vector<int>> metatilemap;
 
-	// read json file -----------------------------------@/
-	std::string json_str; {
-		std::vector<char> filedata;
-
-		// set file buffer's size -----------------------@/
-		auto json_filename = info.kmap_filename;
-		auto file = std::fopen(json_filename.c_str(),"rb");
-		if(!file) {
-			std::printf("aya::CPhoto::convert_fileKMPtoAGM(): error: unable to open file %s for reading\n",
-				json_filename.c_str()
-			);
-			std::exit(-1);
-		}
-		std::fseek(file,0,SEEK_END);
-		filedata.resize(std::ftell(file));
-
-		// read file to string --------------------------@/
-		std::fseek(file,0,SEEK_SET);
-		std::fread(filedata.data(),filedata.size(),1,file);
-		std::fclose(file);
-
-		filedata.push_back(0); // null terminator
-		json_str = std::string(filedata.data());
-	}
-	jsondoc.Parse(json_str.c_str());
-	
-	auto json_validate = [&](const std::string& keyname) {
-		if(!jsondoc.HasMember(keyname.c_str())) {
-			std::printf("aya: validation error: json file missing key %s\n",
-				keyname.c_str()
-			);
-			std::exit(-1);
-		}
-	};
-	
-	json_validate("header");
-	json_validate("layers");
-	json_validate("palettes");
-
-	const int layer_count = jsondoc["header"]["layer_count"].GetInt();
-	const int map_width = jsondoc["header"]["width"].GetInt();
-	const int map_height = jsondoc["header"]["height"].GetInt();
+	const int layer_len = kmapdoc.layer_len();
+	const int map_width = kmapdoc.width();
+	const int map_height = kmapdoc.height();
 	const int map_widthHW = map_width * cel_sizeCelX;
 	const int map_heightHW = map_height * cel_sizeCelY;
 	const int map_widthDot = map_width * cel_sizeX;
@@ -1971,7 +2037,8 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 		int num_flips = 4;
 
 		for(auto srcpic_unsplit : imagetable) {
-			auto srcpic_table = srcpic_unsplit->rect_split(8,8);
+			auto srcpic_unsplitRot = srcpic_unsplit->img_rotate(rotation);
+			auto srcpic_table = srcpic_unsplitRot->rect_split(8,8);
 			std::vector<int> metatile;
 
 			// add tiles to metatile --------------------@/
@@ -2055,29 +2122,25 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 
 	// write to final tilemap ---------------------------@/
 	if(!info.ignore_map) {
-		if(info.kmap_layer > 0 || info.kmap_layer >= layer_count) {
+		if(info.kmap_layer < 0 || info.kmap_layer >= layer_len) {
 			std::printf(
 				"aya::CPhoto::convert_fileKMPtoAGM(): error: specified layer (%d) is out of range of map layers.\n",
 				info.kmap_layer
 			);
 			std::exit(-1);
 		}
-		auto& src_layer = jsondoc["layers"][info.kmap_layer];
+		auto& src_layer = kmapdoc.layer_get(info.kmap_layer);
 
 		for(int y=0; y<map_heightHW; y++) {
 			for(int x=0; x<map_widthHW; x++) {
-			//	std::puts("src tile: check");
 				const int src_tileX = x/cel_sizeCelX;
 				const int src_tileY = y/cel_sizeCelY;
-				const int src_tileIdx = src_tileX + src_tileY * map_width;
-				auto& src_tile = src_layer[src_tileIdx];
-			//	std::puts("src tile: OK");
+				const auto& src_tile = src_layer.at(src_tileX,src_tileY);
 
-			//	std::puts("metatile: check");
-				int tile_name = src_tile["name"].GetInt();
-				int tile_palet = src_tile["palette"].GetInt();
-				int tile_flipH = src_tile["attribute"]["flipH"].GetBool();
-				int tile_flipV = src_tile["attribute"]["flipV"].GetBool();
+				int tile_name = src_tile.m_name;
+				int tile_palet = src_tile.m_palette;
+				int tile_flipH = src_tile.m_flipH;
+				int tile_flipV = src_tile.m_flipV;
 				if(tile_name >= metatilemap.size()) {
 					std::printf(
 						"aya::CPhoto::convert_fileKMPtoAGM(): error: invalid tile name (0x%02X) found at map coord [%3d,%3d]\n"
@@ -2087,20 +2150,17 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 					std::exit(-1);
 				}
 				const auto& src_metatile = metatilemap.at(tile_name);
-			//	std::puts("metatile: OK");
 				
 				int src_x = x%cel_sizeCelX;
 				int src_y = y%cel_sizeCelY;
 				if(tile_flipH) src_x = cel_sizeCelX - src_x - 1;
 				if(tile_flipV) src_y = cel_sizeCelY - src_y - 1;
 				
-			//	std::puts("metatile's data: check");
 				int out_tile = src_metatile.at(src_x + src_y*cel_sizeCelX);
 				out_tile ^= tile_flipH << 10;
 				out_tile ^= tile_flipV << 11;
 				out_tile += tile_palet << 12;
 				blob_mapsection.write_u16(out_tile);
-			//	std::puts("metatile's data: Ok");
 			}
 		}
 	}
@@ -2115,16 +2175,11 @@ auto aya::CPhoto::convert_fileKMPtoAGM(const aya::CAliceAGMConvertInfo& info) ->
 	// create palette -----------------------------------@/
 	if(aya::alice_graphfmt::getBPP(format) <= 8 && !info.ignore_palet) {
 		scl::blob palet_blob;
-		const int palet_count = jsondoc["palettes"].Size();
+		const int palet_count = kmapdoc.palet_len();
 		for(int palet=0; palet<palet_count; palet++) {
 			for(int pen=0; pen<16; pen++) {
-				auto& src_color = jsondoc["palettes"][palet]["colors"][pen];
-				auto color = aya::CColor(255,
-					src_color["r"].GetInt(),
-					src_color["g"].GetInt(),
-					src_color["b"].GetInt()
-				);
-				color.write_rgb5a1_agb(blob_paletsection);
+				auto& src_color = kmapdoc.palet_get(palet).at(pen);
+				src_color.write_rgb5a1_agb(blob_paletsection);
 			}
 		}
 	} else {

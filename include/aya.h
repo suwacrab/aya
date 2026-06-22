@@ -21,6 +21,10 @@ namespace aya {
 	class CEdgeAnimPattern;
 	class CEdgeAnimFrame;
 	class CEdgeAnimPart;
+	class CKmapJSON;
+	class CKmapJSONTile;
+
+	template<typename Type> class basic_array2d;
 
 	struct MARISA_MGIFILE_HEADER;
 	struct PATCHU_PGIFILE_HEADER;
@@ -166,6 +170,7 @@ namespace aya {
 		int palet_offset;
 		std::string kmap_filename;
 		int kmap_layer;
+		int kmap_rotate;
 		bool ignore_cel;
 		bool ignore_map;
 		bool ignore_palet;
@@ -195,9 +200,11 @@ namespace aya {
 	auto conv_po2(int n) -> int;
 	auto compress(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
 	auto compress_spd(scl::blob& srcblob, bool do_compress = true) -> scl::blob;
-	auto version_get() -> CAyaVersion;
 	auto twiddled_index(int x, int y, int w, int h) -> size_t;
 	auto twiddled_index4b(int x, int y, int w, int h) -> size_t;
+	namespace util {
+		auto version_get() -> CAyaVersion;
+	};
 
 	namespace AGBShape {
 		enum {
@@ -399,6 +406,128 @@ struct aya::HOURAI_HGMFILE_HEADER {
 	uint16_t offset_bmpsection;
 };
 
+template<typename Type> class aya::basic_array2d {
+	private:
+		int m_width,m_height;
+		std::vector<Type> m_data;
+	public:
+		constexpr auto width() const -> int { return m_width; }
+		constexpr auto height() const -> int { return m_height; }
+		constexpr auto dimensions() const -> int { return width() * height(); }
+
+		constexpr auto range_ok(int x, int y) const -> bool {
+			if(x < 0 || x >= width()) return false;
+			if(y < 0 || y >= height()) return false;
+			return true;
+		}
+		constexpr auto range_assert(int x, int y) const -> void {
+			if(!range_ok(x,y)) {
+				std::printf("aya::basic_array2d: error: idx [%3d,%3d] out of range\n",
+					x,y
+				);
+				std::exit(-1);
+			}
+		}
+		constexpr auto range1d_ok(int idx) const -> bool {
+			return idx >= 0 && idx < dimensions();
+		}
+		constexpr auto range1d_assert(int idx) const -> void {
+			if(!range1d_ok(idx)) {
+				std::printf("aya::basic_array2d: error: 1D idx [%4d] out of range\n",
+					idx
+				);
+				std::exit(-1);
+			}
+		}
+		constexpr auto at(int x, int y) -> Type& {
+			range_assert(x,y);
+			return m_data.at(x + y * width());
+		}
+		constexpr auto at(int x, int y) const -> const Type& {
+			range_assert(x,y);
+			return m_data.at(x + y * width());
+		}
+		constexpr auto at(int idx) -> Type& {
+			range1d_assert(idx);
+			return m_data.at(idx);
+		}
+		constexpr auto at(int idx) const -> const Type& {
+			range1d_assert(idx);
+			return m_data.at(idx);
+		}
+
+		auto clear(Type data = Type()) -> void {
+			for(int i=0; i<dimensions(); i++) {
+				m_data.at(i) = data;
+			}
+		}
+
+		auto transform_flip(bool flip_h, bool flip_v) const -> basic_array2d<Type> {
+			auto new_array = aya::basic_array2d<Type>(width(),height());
+
+			for(int y=0; y<height(); y++) {
+				int fy = flip_v ? (height()-y-1) : y;
+				for(int x=0; x<width(); x++) {
+					int fx = flip_h ? (width()-x-1) : x;
+					new_array.at(x,y) = at(fx,fy);
+				}
+			}
+
+			return new_array;
+		}
+		auto transform_rotate(int deg90) const -> basic_array2d<Type> {
+			switch(deg90) {
+				case 0: {
+					auto new_array = *this;
+
+					return new_array;
+				}
+				case 1: {
+					auto new_array = basic_array2d<Type>(height(),width());
+					// new y coordinate is old x
+					// new x coordinate is flipped old y
+
+					for(int y=0; y<height(); y++) {
+						for(int x=0; x<width(); x++) {
+							int new_x = height()-y-1;
+							int new_y = x;
+
+							auto old_dot = at(x,y);
+							new_array.at(new_x,new_y) = old_dot;
+						}
+					}
+
+					return new_array;
+					break;
+				}
+				case 2: {
+					return transform_flip(true,true);
+					break;
+				}
+				case 3: {
+					return transform_rotate(1).transform_flip(true,true);
+					break;
+				}
+			}
+
+			std::printf("aya::basic_array2d::transform_rotate(): error: invalid rotation %d\n",
+				deg90
+			);
+			std::exit(-1);
+		}
+
+		basic_array2d() {
+			m_width = 0;
+			m_height = 0;
+			m_data.clear();
+		}
+		basic_array2d(int newwidth, int newheight) {
+			m_width = newwidth;
+			m_height = newheight;
+			m_data.resize(newwidth * newheight,Type());
+		}
+		~basic_array2d() {}
+};
 struct aya::CColor {
 	uint8_t a,r,g,b;
 	void write_alpha(scl::blob& out_blob) const;
@@ -440,6 +569,7 @@ class aya::CPhoto {
 		auto dot_getTwiddledIdx(int x,int y) const -> size_t;
 		auto palet_getRaw(int pen) -> aya::CColor&;
 		auto palet_getRawC(int pen) const -> const aya::CColor&;
+
 	public:
 		constexpr auto width() const -> int { return m_width; }
 		constexpr auto height() const -> int { return m_height; }
@@ -490,6 +620,7 @@ class aya::CPhoto {
 		auto convert_pngIndexed() -> scl::blob;
 
 		CPhoto();
+		CPhoto(const CPhoto& orig);
 		CPhoto(std::string filename,bool paletted = false, bool opaque_pal=false);
 		CPhoto(int newwidth, int newheight);
 		~CPhoto();
@@ -551,9 +682,62 @@ class aya::CAGBSubframeList {
 	public:
 		std::vector<aya::CAGBSubframe> m_subframes;
 
-	CAGBSubframeList();
-	CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count = 0);
-	~CAGBSubframeList() {}
+		CAGBSubframeList();
+		CAGBSubframeList(aya::CPhoto& basephoto,int lenient_count = 0);
+		~CAGBSubframeList() {}
+};
+
+class aya::CKmapJSONTile {
+	private:
+
+	public:
+		int m_name;
+		int m_palette;
+		bool m_flipH,m_flipV;
+
+		CKmapJSONTile() :
+			m_name(0),
+			m_palette(0),
+			m_flipH(false),m_flipV(false) {}
+};
+class aya::CKmapJSON {
+	private:
+		int m_layercount;
+		int m_paletcount;
+		int m_width,m_height;
+
+		std::vector<aya::basic_array2d<CKmapJSONTile>> m_layers;
+		std::vector<std::vector<aya::CColor>> m_palettes;
+
+	public:
+		auto palet_len() const -> int { return m_paletcount; }
+		auto palet_get(int idx) -> std::vector<aya::CColor>& {
+			if(idx < 0 || idx >= m_paletcount) {
+				std::printf("aya::CKMapJSON::palet_get(): invalid idx %d\n",
+					idx
+				);
+				std::exit(-1);
+			}
+			return m_palettes.at(idx);
+		}
+		auto layer_len() const -> int { return m_layercount; }
+		auto layer_get(int idx) -> aya::basic_array2d<CKmapJSONTile>& {
+			if(idx < 0 || idx >= m_layercount) {
+				std::printf("aya::CKMapJSON::layer_get(): invalid idx %d\n",
+					idx
+				);
+				std::exit(-1);
+			}
+			return m_layers.at(idx);
+		}
+		constexpr auto width() { return m_width; }
+		constexpr auto height() { return m_height; }
+
+		auto transform_flip(bool flip_h, bool flip_v, bool modify_attrib) -> void;
+		auto transform_rotate(int deg90) -> void;
+
+		CKmapJSON();
+		CKmapJSON(std::string src_filename);
 };
 
 class aya::CEdgeAnimPart {
