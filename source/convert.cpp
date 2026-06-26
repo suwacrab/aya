@@ -160,7 +160,6 @@ auto aya::CKmapJSON::transform_rotate(int deg90) -> void {
 		case 3: {
 			transform_rotate(1);
 			transform_flip(true,true,false);
-		//	new_layer = new_layer.transform_rotate(1)->transform_flip(true,true);
 			break;
 		}
 	}
